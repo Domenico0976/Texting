@@ -1,0 +1,5 @@
+@import "tailwindcss";
+
+/* The canvas fills the frame; the HUD floats over it. Nothing else is styled here on purpose -
+   the picture is the shader, and every colour in it is a param, not a stylesheet value. */
+html, body, #root { height: 100%; margin: 0; background: #000; }
