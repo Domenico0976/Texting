@@ -43,6 +43,8 @@ export const makeUniforms = (tex: THREE.DataTexture) => ({
   vignette: uniform(0.15), vignetteRadius: uniform(0.4), filmGrain: uniform(0.02), dither: uniform(1),
   // frame
   framePadding: uniform(0.06), offset: uniform(new THREE.Vector2(0, 0)), zoom: uniform(1), aa: uniform(0.8),
+  // selected-cell audio reactivity
+  selectedCell: uniform(new THREE.Vector2(-1, -1)), selectedOn: uniform(0), selectedScale: uniform(1),
   // debug
   showField: uniform(0), showCells: uniform(0),
   // the cell grid
@@ -60,7 +62,7 @@ export const buildPicture = (U: Uniforms) => {
   // one cell: vec4(fill, hover, flash, inside). Outside the grid: empty, filled or wrapped (params).
   const cellAt = Fn(([ij]: any[]) => {
     const g = vec2(U.cols, U.rows)
-    const c = mix(ij, mod(ij, g), U.outsideWrap)
+    const c: any = mix(ij, mod(ij, g), U.outsideWrap)
     const inside = step(0, c.x).mul(step(c.x, g.x.sub(0.5))).mul(step(0, c.y)).mul(step(c.y, g.y.sub(0.5)))
     const t = U.grid.sample(c.add(0.5).div(GRID_MAX))
     const v = mix(U.outsideFill, t.r, inside)
@@ -86,7 +88,7 @@ export const buildPicture = (U: Uniforms) => {
     const TL = F(-1, 1), TR = F(1, 1), BL = F(-1, -1), BR = F(1, -1)
     const not = (x: any) => float(1).sub(x)
     const sxp = step(0, q.x), syp = step(0, q.y)
-    const aq = abs(q)
+    const aq: any = abs(q)
 
     // ---- filled cell: the pixel's quadrant and its three neighbours (H beside, V above/below, D diagonal)
     // decide the local shape. Every case is the exact distance to the exposed ink boundary.
@@ -155,8 +157,11 @@ export const buildPicture = (U: Uniforms) => {
     const rectMask = float(1).sub(smoothstep(aaPx.negate(), aaPx, rectD))
     const emptyMask = float(1).sub(Cf).mul(rectMask)
 
-    // the glyph
-    const field = sdf(c)
+    // the glyph. Only the selected cell is evaluated in a coordinate system
+    // scaled around its own centre; every other cell keeps the original SDF.
+    const selected = step(abs(ij.x.sub(U.selectedCell.x)), 0.1).mul(step(abs(ij.y.sub(U.selectedCell.y)), 0.1)).mul(U.selectedOn)
+    const scaledC = U.selectedCell.add(c.sub(U.selectedCell).div(U.selectedScale.max(0.01)))
+    const field = sdf(mix(c, scaledC, selected))
     const d = field.x, fillet = field.y
     const inkMask = float(1).sub(smoothstep(aaC.negate(), aaC, d)).mul(rectMask)
 
@@ -198,7 +203,6 @@ export const buildPicture = (U: Uniforms) => {
     // the hovered cell tints (over ink too, so the cell about to be erased is visible); painted cells flash
     col.assign(mix(col, U.hoverColor, self.g.mul(U.hover).mul(0.5).mul(rectMask)))
     col.assign(mix(col, U.hoverColor, self.b.mul(U.flash).mul(rectMask)))
-
     // gridlines inside the rect and the border on its edge, over or under the ink
     const lf = abs(f.sub(0.5))
     const edgeDist = float(0.5).sub(max(lf.x, lf.y)).mul(cellPx)
@@ -208,6 +212,9 @@ export const buildPicture = (U: Uniforms) => {
     const border = float(1).sub(smoothstep(bw.sub(aaPx), bw.add(aaPx), abs(rectD))).mul(U.borderOn)
     const lines = max(gridLine, border).mul(U.lineOpacity).mul(mix(float(1).sub(inkMask), 1, U.gridOverInk))
     col.assign(mix(col, U.lineColor, lines))
+    // selected cell keeps a visible frame even when the audio scale is at rest
+    const selEdge = float(1).sub(smoothstep(gw, gw.add(aaPx), float(0.5).sub(max(abs(q.x), abs(q.y)))))
+    col.assign(mix(col, U.hoverColor, selEdge.mul(selected).mul(rectMask).mul(0.9)))
 
     // grade: brightness, contrast, gamma, saturation, hue
     col.assign(col.mul(U.brightness))

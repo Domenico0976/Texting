@@ -8,6 +8,10 @@ import * as THREE from 'three/webgpu'
 import { mountStage, type Stage } from '../lib/stage'
 import { makeUniforms, buildPicture, GRID_MAX } from '../lib/shader'
 import { CYCLE, rasterGlyph } from '../lib/glyphs'
+import {
+  configFromPreset, createFollowerState, resolveCellScale, shapeCellSignal,
+  type AudioEngine, type CellAudioConfig, type CellAudioDebug, type CellCoord,
+} from '../lib/audio'
 
 type Look = 'custom' | 'paper' | 'night' | 'blueprint' | 'riso' | 'mint'
 type Glyph = 'reference' | 'heart' | 'arrow' | 'smiley' | 'A' | 'S' | 'random' | 'clear'
@@ -18,15 +22,21 @@ type Props = {
   circles?: boolean; circleStroke?: number; circleScale?: number; circleFill?: number; circleFillColor?: string; circleInFilled?: boolean
   look?: Look; inkColor?: string; paperColor?: string; invert?: boolean; grain?: number; grainScale?: number; grainFine?: number; inkGrain?: number; grainAnimate?: boolean
   effect?: 'none' | 'shadow' | 'glow'; effectColor?: string; effectOpacity?: number; effectSize?: number; shadowX?: number; shadowY?: number
-  tool?: 'toggle' | 'draw' | 'erase' | 'off'; brushSize?: number; hover?: number; hoverColor?: string; hoverEase?: number; paintFlash?: number
+  tool?: 'toggle' | 'draw' | 'erase' | 'select' | 'off'; brushSize?: number; hover?: number; hoverColor?: string; hoverEase?: number; paintFlash?: number
   brightness?: number; contrast?: number; gamma?: number; saturation?: number; hueShift?: number
   speed?: number; paused?: boolean; timeOffset?: number; respectReducedMotion?: boolean
   exposure?: number; tone?: 'neutral' | 'agx' | 'aces' | 'linear'; vignette?: number; vignetteRadius?: number; filmGrain?: number; dither?: number
   resolutionScale?: number; pixelRatioCap?: number; framePadding?: number; offsetX?: number; offsetY?: number; zoom?: number; antialias?: number
   hud?: boolean; title?: string; subtitle?: string; note?: string; hudColor?: 'auto' | 'light' | 'dark'; hudPosition?: 'bottom-left' | 'top-left' | 'bottom-right' | 'top-right'; hudScale?: number
   showField?: boolean; showCells?: boolean; fps?: boolean
+  audioEngine?: AudioEngine | null
+  audioConfig?: CellAudioConfig
+  selectedCell?: CellCoord | null
+  onCellSelect?: (cell: CellCoord | null) => void
+  onAudioDebug?: (debug: CellAudioDebug) => void
 }
-const DEFAULTS: Required<Props> = {
+type RenderProps = Required<Omit<Props, 'audioEngine' | 'audioConfig' | 'selectedCell' | 'onCellSelect' | 'onAudioDebug'>>
+const DEFAULTS: RenderProps = {
   glyph: 'reference', columns: 5, rows: 5, presetScale: true, randomDensity: 0.45, seed: 7, outside: 'empty', fillSpeed: 10,
   cornerRadius: 1, innerCorners: true, innerRadius: 1, padding: 0, breathe: 0, breatheRate: 0.25, cycle: false, cyclePeriod: 4, cycleStagger: 0.5,
   gridlines: true, gridWidth: 1.2, border: true, borderWidth: 1.6, lineFollowsInk: true, lineColor: '#2c2c2c', lineOpacity: 0.9, gridOverInk: true,
@@ -41,6 +51,7 @@ const DEFAULTS: Required<Props> = {
   hud: false, title: 'quoin // three.js tsl', subtitle: 'modular grid glyphs | realtime, webgpu', note: 'click or drag to draw · shift or right button erases', hudColor: 'auto', hudPosition: 'bottom-left', hudScale: 1,
   showField: false, showCells: false, fps: false,
 }
+const DEFAULT_AUDIO: CellAudioConfig = { ...configFromPreset('level'), enabled: false }
 // A look sets colours (and a few line / effect values) at once; `custom` leaves everything to the controls.
 const LOOKS: Record<Look, Partial<Props>> = {
   custom: {},
@@ -59,6 +70,10 @@ export default function Quoin(raw: Props) {
   const host = useRef<HTMLDivElement>(null)
   const live = useRef(props)
   live.current = props
+  const selectedRef = useRef<CellCoord | null>(props.selectedCell ?? null)
+  selectedRef.current = props.selectedCell ?? null
+  const debugCb = useRef(props.onAudioDebug)
+  debugCb.current = props.onAudioDebug
   const [failed, setFailed] = useState<string | null>(null)
   const [stats, setStats] = useState({ fps: 0, backend: 'starting', w: 0, h: 0 })
 
@@ -79,7 +94,7 @@ export default function Quoin(raw: Props) {
     material.colorNode = buildPicture(U)
 
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
-    const resolved = (p: Required<Props>) => ({ ...p, ...LOOKS[p.look] })
+    const resolved = (p: RenderProps) => ({ ...p, ...LOOKS[p.look] })
     const goal = new THREE.Color(), goalOffset = new THREE.Vector2(), goalShadow = new THREE.Vector2()
     const ease = (u: { value: number }, to: number, k: number) => { u.value += (to - u.value) * k }
     const idx = (x: number, y: number) => y * N + x            // texel index, y from the bottom
@@ -88,6 +103,8 @@ export default function Quoin(raw: Props) {
     let seenGlyph = '', seenSeed = NaN, seenDensity = NaN, seenScale: boolean | null = null
     let tone = '', statAt = 0, dragAction = -1, lastCx = NaN, lastCy = NaN, eraseMod = false
     let clock = 0
+    const follower = createFollowerState()
+    let lastAudioDebug = 0
 
     // write a preset (row 0 at the top) into the pending or the target grid, centred, scaled
     const applyGlyph = (name: string, stagger: number) => {
@@ -165,15 +182,26 @@ export default function Quoin(raw: Props) {
         // every press since the last frame (even ones already released): decide the action from the cell
         // under the press itself, paint it, then continue from there to wherever the pointer is now
         const pressed = presses.length > 0
-        for (const pr of presses) {
-          const dx = (pr.x * pw - ox) / cellPx, dy = (pr.y * ph - oy) / cellPx
-          const onGrid = dx >= 0 && dy >= 0 && dx < cols && dy < rows
-          const base = p.tool === 'draw' ? 1 : p.tool === 'erase' ? 0 : p.tool === 'toggle' ? (onGrid && target[idx(Math.floor(dx), Math.floor(dy))] > 0.5 ? 0 : 1) : -1
-          dragAction = base < 0 ? -1 : pr.erase ? 1 - base : base
-          lastCx = dx; lastCy = dy
-          if (dragAction >= 0) paint(dx, dy, dragAction, p.brushSize)
+        if (p.tool === 'select') {
+          for (const pr of presses) {
+            const dx = (pr.x * pw - ox) / cellPx, dy = (pr.y * ph - oy) / cellPx
+            if (dx >= 0 && dy >= 0 && dx < cols && dy < rows) {
+              live.current.onCellSelect?.({ x: Math.floor(dx), y: Math.floor(dy) })
+            }
+          }
+          presses.length = 0
+          dragAction = -1
+        } else {
+          for (const pr of presses) {
+            const dx = (pr.x * pw - ox) / cellPx, dy = (pr.y * ph - oy) / cellPx
+            const onGrid = dx >= 0 && dy >= 0 && dx < cols && dy < rows
+            const base = p.tool === 'draw' ? 1 : p.tool === 'erase' ? 0 : p.tool === 'toggle' ? (onGrid && target[idx(Math.floor(dx), Math.floor(dy))] > 0.5 ? 0 : 1) : -1
+            dragAction = base < 0 ? -1 : pr.erase ? 1 - base : base
+            lastCx = dx; lastCy = dy
+            if (dragAction >= 0) paint(dx, dy, dragAction, p.brushSize)
+          }
+          presses.length = 0
         }
-        presses.length = 0
         if ((pt.down || pressed) && dragAction >= 0 && pt.inside) {
           // paint along the segment since the last frame so a fast drag leaves no gaps
           const steps = Math.max(1, Math.ceil(Math.hypot(cx - lastCx, cy - lastCy) * 2))
@@ -201,6 +229,28 @@ export default function Quoin(raw: Props) {
           if (data[o] !== r || data[o + 1] !== g || data[o + 2] !== b) { data[o] = r; data[o + 1] = g; data[o + 2] = b; data[o + 3] = 255; changed = true }
         }
         if (changed) tex.needsUpdate = true
+
+        // selected-cell audio: analysis runs on the existing frame loop, but only
+        // a selected filled cell is allowed to receive the reactive scale.
+        const audio = raw.audioEngine
+        const audioConfig = raw.audioConfig ?? DEFAULT_AUDIO
+        const selected = selectedRef.current
+        const selectedFilled = !!selected && selected.x >= 0 && selected.y >= 0 && selected.x < cols && selected.y < rows && fill[idx(selected.x, selected.y)] > 0.5
+        const audioActive = !!audio?.ready && audioConfig.enabled && !!selected && selectedFilled
+        if (audio) audio.update(performance.now())
+        const rawSignal = audioActive ? audio.value(audioConfig.reactTo, { band: audioConfig.band, trigger: audioConfig.trigger }) : 0
+        const shaped = audioActive ? shapeCellSignal(rawSignal, audioConfig, real, follower) : 0
+        const cellScale = audioActive ? resolveCellScale(selected, selectedFilled, audioConfig, shaped) : 1
+        if (!audioActive) follower.value = 0
+        if (selected) U.selectedCell.value.set(selected.x, selected.y)
+        else U.selectedCell.value.set(-1, -1)
+        U.selectedOn.value = selected ? 1 : 0
+        U.selectedScale.value = cellScale
+        const audioNow = performance.now()
+        if (debugCb.current && audioNow - lastAudioDebug > 100) {
+          lastAudioDebug = audioNow
+          debugCb.current({ selected, filled: selectedFilled, raw: rawSignal, shaped, scale: cellScale, enabled: audioActive, reaction: audioConfig.reactTo, engineReady: !!audio?.ready, configEnabled: audioConfig.enabled, hasSelection: !!selected, engineId: audio?.id ?? '' })
+        }
 
         // corners: radius in cell units (half a cell at 1), breathing on a cosine
         const bf = 1 - p.breathe * (0.5 - 0.5 * Math.cos(tAt * p.breatheRate * Math.PI * 2))
@@ -260,7 +310,7 @@ export default function Quoin(raw: Props) {
 
   return (
     <div className="relative h-full w-full overflow-hidden select-none" style={{ background: paperHex }}>
-      <div ref={host} className="absolute inset-0" style={{ cursor: props.tool === 'off' ? 'default' : 'crosshair' }} />
+      <div ref={host} className="absolute inset-0" style={{ cursor: props.tool === 'off' ? 'default' : props.tool === 'select' ? 'pointer' : 'crosshair' }} />
       {props.hud && (
         <div className={`pointer-events-none absolute flex flex-col gap-1 font-mono ${pos[props.hudPosition] ?? pos['bottom-left']}`}
              style={{ color: fg, transform: 'scale(' + hudScale + ')', transformOrigin: props.hudPosition.replace('-', ' ') }}>

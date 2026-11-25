@@ -1,4 +1,4 @@
-import { StrictMode, useState } from 'react'
+import { StrictMode, useEffect, useRef, useState } from 'react'
 import type { ComponentType } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
@@ -6,6 +6,8 @@ import Variant0 from './components/main.tsx'
 import Variant1 from './components/dense-riso.tsx'
 import Variant2 from './components/midnight-minimal.tsx'
 import { ControlsPanel, useControls } from './controls-ui'
+import CellAudioPanel from './components/cell-audio-panel'
+import { AudioEngine, configFromPreset, type CellAudioConfig, type CellAudioDebug, type CellCoord } from './lib/audio'
 import rawSchema from '../controls/main.json'
 const schema = (rawSchema as any).story
 
@@ -35,6 +37,12 @@ function App() {
     (requested && (variants[requested] ? requested : byName[requested])) || "var_76b859b6-a75a-41da-95d8-91908139cde9"
   )
   const { values, set, reset } = useControls(schema as any, initialById[variantId])
+  const audioRef = useRef<AudioEngine | null>(null)
+  if (!audioRef.current) audioRef.current = new AudioEngine()
+  const [selectedCell, setSelectedCell] = useState<CellCoord | null>(null)
+  const [audioConfig, setAudioConfig] = useState<CellAudioConfig>({ ...configFromPreset('level'), enabled: false })
+  const [audioDebug, setAudioDebug] = useState<CellAudioDebug | null>(null)
+  useEffect(() => () => audioRef.current?.stop(), [])
   const Variant = variants[variantId] ?? (() => null)
 
   return (
@@ -48,7 +56,21 @@ function App() {
             </button>
           ))}
         </div>
-        <Variant {...values} />
+        <Variant
+          {...values}
+          audioEngine={audioRef.current}
+          audioConfig={audioConfig}
+          selectedCell={selectedCell}
+          onCellSelect={setSelectedCell}
+          onAudioDebug={setAudioDebug}
+        />
+        <CellAudioPanel
+          engine={audioRef.current}
+          config={audioConfig}
+          onConfig={setAudioConfig}
+          selected={selectedCell}
+          debug={audioDebug}
+        />
       </div>
       <ControlsPanel schema={schema as any} values={values} set={set} onReset={reset} />
     </div>
