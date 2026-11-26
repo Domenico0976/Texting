@@ -22,6 +22,7 @@ const box: React.CSSProperties = {
 }
 const row: React.CSSProperties = { display: 'grid', gridTemplateColumns: '92px 1fr 48px', gap: 8, alignItems: 'center', marginTop: 7 }
 const input: React.CSSProperties = { width: '100%', background: '#22242b', color: '#eee', border: '1px solid #393c46', borderRadius: 6, padding: '4px 6px' }
+const sect: React.CSSProperties = { marginTop: 10, marginBottom: 2, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase', color: '#8b8f9a' }
 const button: React.CSSProperties = { background: '#2a2d35', color: '#eee', border: '1px solid #414551', borderRadius: 6, padding: '5px 8px', cursor: 'pointer' }
 
 export default function CellAudioPanel({ engine, config, onConfig, selected, debug, debugRing, onDebugRing }: Props) {
@@ -83,13 +84,32 @@ export default function CellAudioPanel({ engine, config, onConfig, selected, deb
         </select>
       </div>
 
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+        <label>Wave</label>
+        <select style={input} value={config.wave ?? 'sine'} onChange={(e) => patch({ wave: e.target.value as 'sine' | 'saw' | 'triangle' | 'quad' })}>
+          <option value='sine'>Sine (smooth)</option>
+          <option value='saw'>Saw</option>
+          <option value='triangle'>Triangle</option>
+          <option value='quad'>Quad</option>
+        </select>
+      </div>
+      <div style={sect}>IMPACT · sensitivity, min/max scale</div>
       <Slider label="Sensitivity" value={config.sensitivity} min={0} max={100} step={1} onChange={(v) => patch({ sensitivity: v })} />
       <Slider label="Min scale" value={config.minScale} min={0.1} max={1} step={0.01} onChange={(v) => patch({ minScale: Math.min(v, config.maxScale) })} />
       <Slider label="Max scale" value={config.maxScale} min={0.1} max={1} step={0.01} onChange={(v) => patch({ maxScale: Math.max(v, config.minScale) })} />
+      <div style={sect}>RESPONSE · wave + steps</div>
       <Slider label="Steps (0 = off)" value={config.steps} min={0} max={32} step={1} onChange={(v) => patch({ steps: v })} />
+      <div style={sect}>GATE · threshold, attack, release</div>
+      <Slider label="Threshold" value={config.threshold} min={0} max={1} step={0.01} onChange={(v) => patch({ threshold: v })} />
       <Slider label="Attack (ms)" value={config.attack * 1000} min={0} max={1000} step={1} onChange={(v) => patch({ attack: v / 1000 })} />
       <Slider label="Release (ms)" value={config.release * 1000} min={0} max={2000} step={1} onChange={(v) => patch({ release: v / 1000 })} />
-      <Slider label="Threshold" value={config.threshold} min={0} max={1} step={0.01} onChange={(v) => patch({ threshold: v })} />
+      <label style={row}>
+      <div style={sect}>MOTION - roam seed + band</div>
+        <span>Roam seed</span>
+        <input type="number" style={input} value={config.roamSeed ?? 0} onChange={(e) => patch({ roamSeed: Number(e.target.value) })} />
+        <span />
+      </label>
+      <Slider label="Roam band" value={config.roamBand ?? 0.5} min={0} max={1} step={0.01} onChange={(v) => patch({ roamBand: v })} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
         <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>

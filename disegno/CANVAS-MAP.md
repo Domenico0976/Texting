@@ -38,6 +38,33 @@
 | Molecule/Segmented | Active 3 | secondary + background pill | h 28, radius 8/6 | active | toolbar, presets, export |
 | Molecule/Tabs | Active 5 (Look/Grid/Motion/Audio/Export) | selection underline 2px | h 36 | active | catalogo (non usato nell'Inspector 0.12) |
 | Molecule/InspectorRow | Kind = Number/Slider/Toggle/Select | secondary/background/input/selection | h 28, label Body 13 | default | inspector |
+| Molecule/TableHeadCell | Align = Start/Center × Theme | muted-foreground | h 26, label 10 uppercase ls 0.6 | — | dock table head |
+| Molecule/SelectCell | State = Rest/Hover × Theme | foreground + accent hover | h 26, cella 204, chevron 16 adiacente | rest, hover | dock rows |
+| Molecule/ValueCell | Kind = Number/Range × Theme | foreground | h 26, cella 188, 13 tabular | — | dock rows |
+| Molecule/TrackCell | Theme 2 | input track + selection fill | h 26, valore 12 + track 90×4 | — | dock rows |
+| Molecule/CellButton | State = Rest/Hover × Theme | accent | 24×24, radius 6, icona 16 | rest, hover | dock rows, liste |
+| Molecule/ViewSwitch | Active = Presets/Scenes × Theme | input track + selection pill | 125×24, segmenti 60/59×18 | presets, scenes | dock bar |
+| Molecule/VolumeCell | Theme 2 | input + selection | h 24, icona 16 + track 80×4 + 12 | — | dock bar |
+| Organism/DockRow | Theme 2 | foregound/muted/selection | 1406×32: Name 384 · Settings 832 · Frequency 100 · Action 32, 9 istanze | — | dock Presets |
+| Molecule/MiniThumb | Theme 2 | background + foreground/input | 20×20, 5×5 celle 3 | — | SceneTab, Clip, card |
+| Molecule/SceneTab | State = Active/Rest × Theme | selection underline + foreground/muted-foreground | 190×32: thumb 20 + name 12 + range 11 + underline 2 | active, rest | dock Scenes strip |
+| Molecule/TransitionMarker | Theme 2 | input + border | 20×32, cerchio 16 con chevron-right | — | strip tra scene |
+| Molecule/ToolRow | State = Rest/Active × Theme | accent | 204×34: icona 16 + name 13 + kind 11 + more 16 | rest, active | dock Scenes Tools |
+| Molecule/Clip | Kind = Layer/Modulation × State = Rest/Selected × Theme | accent + selection border | h 24, radius 5; Layer 242 (thumb + label), Modulation 300 (onda + label + dB) | 8 | timeline |
+| Molecule/ModRow | State = Rest/Selected × Theme | accent + selection bar | 264×24: source 11 · → · target 13 · value 12 | rest, selected | dock Modulation |
+| Molecule/TimeRuler | Theme 2 | muted-foreground | 906×22, 7 label 10 | — | timeline |
+| Molecule/Playhead | Theme 2 | selection | handle 7 + linea 1×172 | — | timeline |
+| Molecule/ScrollBar | Theme 2 | input + muted-foreground | 906×3, handle 229 | — | timeline |
+| Molecule/LoopRegion | Theme 2 | selection 35% | 755×2 | — | timeline |
+| Molecule/WaveStrip | Theme 2 | selection 55% | 906×28, 32 barre | — | timeline |
+| Molecule/AddModulationRow | Theme 2 | muted-foreground | 264×20, 11 | — | dock Modulation |
+| Molecule/MiniThumb | Kind = Scene/Noise × Theme | background + foreground / muted-foreground | 20×20; Scene 5×5 celle 3, Noise 5×5 punti 2 | 4 | SceneTab, Clip |
+| Molecule/SectionCard | Kind = Plain/Reset × Theme | muted | 384 wide, p 12/12/10, r 8, Head 14 + info 16 + reset 24, Slot FILL | 4 | Reactivity panel |
+| Molecule/ValueChip | State = Rest/Focus × Theme | input (+ ring 2) | h 20, min-w 24, r 4, 12 tabular | 4 | pannelli, inspector |
+| Molecule/AxisTicks | Kind = Single/Dual × Theme | muted-foreground + input | 276 wide; Single 3 stop 11; Dual = 2 colonne con titolo 12 + traccia 4 | 4 | Reactivity panel |
+| Molecule/SliderCompact | State = Rest/Drag × Theme | input + selection | 140×16, traccia 2, pomello 20×14 r 7 | 4 | Reactivity panel |
+| Molecule/RangeSlider | State = Rest/Drag × Theme | muted-foreground + selection | 276×56, 2 maniglie con punta, valori sotto | 4 | Reactivity panel |
+| Icon/info | Size = 16/20 × Theme | foreground | cerchio + punto + barra | 4 | SectionCard, tooltip |
 | Organism/NavRailItem | State 3 | accent/selection | 40×40, radius 8, icon 20 | default, hover, active | rail |
 | Organism/NavItem | State 3 | accent | h 30, radius 6, icon 16 | default, hover, active | sidebar |
 | Organism/TreeRow | State 3 | accent | h 26, radius 4, indent 20 | default, selected, hover | sidebar |

@@ -44,7 +44,7 @@ export const makeUniforms = (tex: THREE.DataTexture) => ({
   // frame
   framePadding: uniform(0.06), offset: uniform(new THREE.Vector2(0, 0)), zoom: uniform(1), aa: uniform(0.8),
   // selected-cell audio reactivity
-  selectedCell: uniform(new THREE.Vector2(-1, -1)), selectedOn: uniform(0), selectedScale: uniform(1), shapeOn: uniform(0), audioAmt: uniform(0), bandAmt: uniform(0), ringOn: uniform(0),
+  selectedCell: uniform(new THREE.Vector2(-1, -1)), selectedOn: uniform(0), selectedScale: uniform(1), shapeOn: uniform(0), audioAmt: uniform(0), shapeAmt: uniform(0), bandAmt: uniform(0), roamSeed: uniform(0), roamSpeed: uniform(1), ringOn: uniform(0),
   // debug
   showField: uniform(0), showCells: uniform(0),
   // the cell grid
@@ -66,7 +66,7 @@ export const buildPicture = (U: Uniforms) => {
     const inside = step(0, c.x).mul(step(c.x, g.x.sub(0.5))).mul(step(0, c.y)).mul(step(c.y, g.y.sub(0.5)))
     const t = U.grid.sample(c.add(0.5).div(GRID_MAX))
     const v = mix(U.outsideFill, t.r, inside)
-    return vec4(v, t.g.mul(inside), t.b.mul(inside), inside)
+    return vec4(v, t.g.mul(inside), t.b.mul(inside), t.a)
   })
 
   // signed distance to the ink in cell units (negative inside), from the cell's 3x3 neighbourhood.
@@ -164,25 +164,33 @@ export const buildPicture = (U: Uniforms) => {
     // effect radius (debug + driver): distance from the selected quadrant, widened by the level
     const dSel = vec2(cu.x.sub(floor(U.selectedCell.x).add(0.5)), cu.y.sub(floor(U.selectedCell.y).add(0.5)))
     const radCells = float(0.9).add(level.mul(1.6)).add(U.bandAmt.mul(1.4))
-    const hit = U.selectedOn.mul(exp(dSel.x.mul(dSel.x).add(dSel.y.mul(dSel.y)).div(radCells.mul(radCells).negate())))
-    const shapeMix = float(U.shapeOn)
-    const cellAmt = (d: any): any => U.selectedOn.mul(level).mul(exp(d.mul(d).div(-2.6)))
-    const shapeAmtAt = (k: any): any => {
-      const kf = float(k)
-      const h = fract(sin(kf.mul(27.13)).mul(43758.5453))
-      return level.mul(float(0.35).add(h.mul(0.65))).mul(0.7)
-    }
-    const amtCol = (k: any): any => mix(cellAmt(float(k).sub(floor(U.selectedCell.x))), shapeAmtAt(k), shapeMix)
-    const amtRow = (k: any): any => mix(cellAmt(float(k).sub(floor(U.selectedCell.y))), shapeAmtAt(float(k).add(7.3)), shapeMix)
+    const sigma = radCells.mul(0.5)
+    const hit = U.selectedOn.mul(exp(dSel.x.mul(dSel.x).add(dSel.y.mul(dSel.y)).div(sigma.mul(sigma).mul(-2.0))))
+    const cellAmt = (d: any): any => U.selectedOn.mul(level).mul(exp(d.mul(d).div(sigma.mul(sigma).mul(-2.0))))
+    // roaming: slow seeded drift, per quadrant, always scaled by the audio level
+    const hashk = (k: any): any => fract(sin(float(k).add(U.roamSeed).mul(12.9898)).mul(43758.5453))
+    const roam = (k: any): any => float(0.4).add(float(0.6).mul(sin(U.time.mul(0.8).mul(U.roamSpeed).add(hashk(k).mul(6.2831))).mul(0.5).add(0.5)))
+    const shapeAmtAt = (k: any): any => U.shapeAmt.mul(sin(float(k).mul(2.1).add(U.time.mul(0.55)).add(hashk(k).mul(2.0))).mul(0.5).add(0.5).mul(0.7).add(0.15)).mul(roam(k))
+    const amtCol = (k: any): any => { const c0 = cellAmt(float(k).sub(floor(U.selectedCell.x))).mul(roam(k)); return c0.add(shapeAmtAt(k).mul(float(1).sub(c0))) }
+    const amtRow = (k: any): any => { const c0 = cellAmt(float(k).sub(floor(U.selectedCell.y))).mul(roam(float(k).add(11.7))); return c0.add(shapeAmtAt(float(k).add(7.3)).mul(float(1).sub(c0))) }
     const mapAxis = (x: any, n: any, amtAt: any): any => {
-      let sum: any = float(0)
-      for (let k = 0; k < 32; k++) sum = sum.add(amtAt(k).mul(step(float(k), n.sub(1))))
+      const A: any[] = []
+      for (let k = 0; k < 16; k++) A.push(amtAt(k))   // evaluate each cell once
+      let sum: any = float(0), amin: any = float(1), amax: any = float(0)
+      for (let k = 0; k < 16; k++) {
+        const gk = step(float(k), n.sub(1))
+        const a = A[k]
+        sum = sum.add(a.mul(gk))
+        amin = min(amin, mix(float(1), a, gk))
+        amax = max(amax, mix(float(1), a, gk))
+      }
       const mean = sum.div(n.max(1))
-      const boost = float(1).div(float(1).sub(mean).max(0.35))   // undo the dilution of the mean
-      const meanB = mean.mul(boost)
+      const dev = max(amax.sub(mean), mean.sub(amin)).max(0.001)
+      const gain = min(float(2.6), float(0.8).div(dev))
       let P: any = float(0), idx: any = float(0), u: any = float(0)
-      for (let k = 0; k < 32; k++) {
-        const w = float(1).sub(amtAt(k).mul(boost).sub(meanB)).max(0.2)
+      for (let k = 0; k < 16; k++) {
+        const a2 = A[k].mul(step(float(k), n.sub(1)))
+        const w = float(1).add(gain.mul(mean.sub(a2)))
         const inCell = step(P, x).mul(float(1).sub(step(P.add(w), x))).mul(step(float(k), n.sub(1)))
         idx = mix(idx, float(k), inCell)
         u = mix(u, x.sub(P).div(w), inCell)
@@ -196,7 +204,7 @@ export const buildPicture = (U: Uniforms) => {
     const q = f.sub(0.5)
     const self = cellAt(ij)
     const Cf = step(0.5, self.r)
-    const selected = max(step(abs(ij.x.sub(U.selectedCell.x)), 0.1).mul(step(abs(ij.y.sub(U.selectedCell.y)), 0.1)).mul(U.selectedOn), self.a.div(255))
+    const selected = max(step(abs(ij.x.sub(U.selectedCell.x)), 0.1).mul(step(abs(ij.y.sub(U.selectedCell.y)), 0.1)).mul(U.selectedOn), step(0.5, self.a))
     const half = vec2(U.cols, U.rows).mul(0.5)
     const rectD = max(abs(cu.sub(half)).sub(half).x, abs(cu.sub(half)).sub(half).y).mul(cellPx)   // px, + outside
     const aaPx = U.aa.mul(U.px)

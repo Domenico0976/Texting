@@ -245,7 +245,13 @@ export default function Quoin(raw: Props) {
         const audioActive = !!audio?.ready && audioConfig.enabled && (shapeOn || !!selected)
         if (audio) audio.update(performance.now())
         const rawSignal = audioActive ? audio.value(audioConfig.reactTo, { band: audioConfig.band, trigger: audioConfig.trigger }) : 0
-        const shaped = audioActive ? shapeCellSignal(rawSignal, audioConfig, real, follower) : 0
+        const shapedRaw = audioActive ? shapeCellSignal(rawSignal, audioConfig, real, follower) : 0
+        const wv = audioConfig.wave ?? 'sine'
+        let shaped = wv === 'saw' ? shapedRaw : wv === 'triangle' ? 1 - Math.abs(2 * shapedRaw - 1) : wv === 'quad' ? (shapedRaw < 0.5 ? 0 : 1) : shapedRaw
+        const thr = Math.max(0, Math.min(0.95, audioConfig.threshold))
+        shaped = Math.max(0, Math.min(1, (shaped - thr) / Math.max(0.01, 1 - thr)))
+        const stp = Math.round(audioConfig.steps)
+        if (stp > 0) shaped = Math.round(shaped * stp) / stp
         const probe = shapeOn ? { x: 0, y: 0 } : selected
         const cellScale = audioActive ? resolveCellScale(probe, true, audioConfig, shaped) : 1
         if (!audioActive) follower.value = 0
@@ -254,10 +260,15 @@ export default function Quoin(raw: Props) {
         U.selectedOn.value = selected ? 1 : 0
         U.shapeOn.value = shapeOn ? 1 : 0
         U.selectedScale.value = cellScale
-        const amtAudio = Math.max(0, Math.min(1, (1 - cellScale) / Math.max(0.05, 1 - (raw.audioConfig?.minScale ?? 0.55))))
-        U.audioAmt.value = audioActive ? amtAudio : 0
+        const cfgs = raw.audioConfig ?? DEFAULT_AUDIO
+        const sens = Math.max(0, Math.min(1, cfgs.sensitivity / 100))
+        const amtAudio = Math.max(0, Math.min(1, (cellScale - cfgs.minScale) / Math.max(0.05, cfgs.maxScale - cfgs.minScale)))
+        U.audioAmt.value = audioActive ? amtAudio * sens : 0
         U.ringOn.value = raw.debugRing ? 1 : 0
-        U.bandAmt.value = audioActive ? Math.max(0, Math.min(1, audio!.value('low-freq'))) : 0
+        U.shapeAmt.value = audioActive && shapeOn ? Math.max(0, Math.min(1, shaped)) * sens : 0
+        U.bandAmt.value = audioActive ? Math.max(0, Math.min(1, audio!.value('low-freq'))) * sens : 0
+        U.roamSeed.value = raw.audioConfig?.roamSeed ?? 0
+        U.roamSpeed.value = 1 + 0.9 * U.bandAmt.value * (raw.audioConfig?.roamBand ?? 0.5)
         const audioNow = performance.now()
         if (debugCb.current && audioNow - lastAudioDebug > 100) {
           lastAudioDebug = audioNow

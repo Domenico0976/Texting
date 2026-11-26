@@ -1,50 +1,138 @@
 {
-  "name": "Kinetic-opt",
-  "version": "0.1.0",
-  "purpose": "Cosa modula la visualizzazione della griglia (kinetic grid). Non e' un elenco di target audio: e' la mappa parametro -> effetto, con priorita, limiti e debug. Vive accanto a React-to-opt.json (audio -> parametro del livello) e Scenes-opt.json (flusso scene).",
-  "rules": {
-    "gridExtentFixed": "La somma delle dimensioni delle celle resta uguale all'estensione della griglia: una cella che si comprime e' compensata dalle altre. Nessun parametro puo' cambiare la misura globale.",
-    "quadrantOnly": "Si muovono i quadranti (larghezza/altezza delle celle), mai il corpo della cella e mai il canvas.",
-    "sharedEdges": "Ogni giuntura e' un bordo condiviso: la mappa e' continua e monotona, nessuna duplicazione.",
-    "separableAxes": "La deformazione e' separabile per asse: colonne (larghezza) e righe (altezza) si calcolano con la stessa formula.",
-    "compensationExact": "Ogni cella pesa w = 1 - (amt - media); la media garantisce somma esatta = n."
-  },
-  "scope": [
-    {
-      "id": "cell",
-      "label": "Cell",
-      "desc": "Una o piu' celle selezionate sul canvas (Ctrl/⌘ per aggiungere).",
-      "drivers": [
-        { "id": "amount", "label": "Compressione", "drivenBy": "level (1 - scale audio)", "desc": "Quanto si comprime la cella selezionata.", "min": 0, "max": 0.75 },
-        { "id": "radius", "label": "Raggio", "drivenBy": "level", "desc": "Quante celle attorno vengono toccate. Oggi 1.4 + 4*level celle; da tarare con il report audio.", "min": 1.4, "max": 5.4 },
-        { "id": "falloff", "label": "Caduta", "drivenBy": "costante", "desc": "Gaussiana sul raggio: decide quanto rapidamente l'effetto muore.", "value": 2.6 },
-        { "id": "multiSelect", "label": "Multi-selezione", "drivenBy": "utente", "desc": "Ctrl/⌘ click aggiunge una cella all'insieme attivo; click semplice sostituisce.", "value": "click / ctrl-click" }
-      ]
-    },
-    {
-      "id": "shape",
-      "label": "Shape",
-      "desc": "Tutta la griglia, con la stessa logica della cella ma distribuita per cella.",
-      "drivers": [
-        { "id": "amount", "label": "Compressione", "drivenBy": "level", "desc": "Ampiezza per cella, limitata a 0.6." },
-        { "id": "vertical", "label": "Fronte verticale", "drivenBy": "level", "desc": "Il livello mappa sulle righe: alto -> righe in alto, basso -> righe in basso." },
-        { "id": "randomness", "label": "Randomizzazione", "drivenBy": "hash(cella) + livello", "desc": "Quali celle vengono colpite; resta subordinata a compensazione e bordo fisso." }
-      ]
-    }
-  ],
-  "audio": {
-    "note": "Mappa da raffinare con la ricerca in corso: quali grandezze estrarre e con quale priorita.",
-    "proposedPriority": ["onset / kick (quando)", "banda (dove nel canvas)", "RMS / level (quanto)", "derivata (velocita')"],
-    "existingControls": ["sensitivity", "minScale", "maxScale", "steps", "attack", "release", "threshold", "preset"],
-    "polarityFix": "CORRETTO: level = amt audio normalizzato (1 - scale)/(1 - minScale), 0 in silenzio e 1 sul picco. Prima era 1 - scale, quindi il picco dava zero effetto.","dilution": "La media della compensazione riduce la deformazione visibile (~0.44x con 5 colonne): da correggere con amt/(1-mean).","chain": {"onset": "quando", "band": "dove/quanto largo (raggio)", "rms": "quanto profondo", "derivative": "velocita"},"nextPass": ["raggio pilotato dalla banda (non dal level)", "auto-gain lo/hi al posto di threshold", "attack 4ms su onset, release 120-300ms", "peak-hold nel debug invece dell'istantaneo"]
-  },
-  "debug": {
-    "toggle": "showField (pannello Debug)",
-    "renders": ["heat del raggio sulle celle (arancio, 18%)", "contorno a meta' intensita' (viola)", "raggio in celle = 1.4 + 4*level"]
-  },
-  "notModulatable": [
-    "estensione della griglia",
-    "posizione della griglia",
-    "dimensioni minime/massime della cella (solo clamp)"
-  ]
+    "name":  "Kinetic-opt",
+    "version":  "0.1.0",
+    "purpose":  "Cosa modula la visualizzazione della griglia (kinetic grid). Non e\u0027 un elenco di target audio: e\u0027 la mappa parametro -\u003e effetto, con priorita, limiti e debug. Vive accanto a React-to-opt.json (audio -\u003e parametro del livello) e Scenes-opt.json (flusso scene).",
+    "rules":  {
+                  "gridExtentFixed":  "La somma delle dimensioni delle celle resta uguale all\u0027estensione della griglia: una cella che si comprime e\u0027 compensata dalle altre. Nessun parametro puo\u0027 cambiare la misura globale.",
+                  "quadrantOnly":  "Si muovono i quadranti (larghezza/altezza delle celle), mai il corpo della cella e mai il canvas.",
+                  "sharedEdges":  "Ogni giuntura e\u0027 un bordo condiviso: la mappa e\u0027 continua e monotona, nessuna duplicazione.",
+                  "separableAxes":  "La deformazione e\u0027 separabile per asse: colonne (larghezza) e righe (altezza) si calcolano con la stessa formula.",
+                  "compensationExact":  "Ogni cella pesa w = 1 - (amt - media); la media garantisce somma esatta = n."
+              },
+    "scope":  [
+                  {
+                      "id":  "cell",
+                      "label":  "Cell",
+                      "desc":  "Una o piu\u0027 celle selezionate sul canvas (Ctrl/⌘ per aggiungere).",
+                      "drivers":  [
+                                      {
+                                          "id":  "amount",
+                                          "label":  "Compressione",
+                                          "drivenBy":  "level (1 - scale audio)",
+                                          "desc":  "Quanto si comprime la cella selezionata.",
+                                          "min":  0,
+                                          "max":  0.75
+                                      },
+                                      {
+                                          "id":  "radius",
+                                          "label":  "Raggio",
+                                          "drivenBy":  "level",
+                                          "desc":  "Quante celle attorno vengono toccate. Oggi 1.4 + 4*level celle; da tarare con il report audio.",
+                                          "min":  1.4,
+                                          "max":  5.4
+                                      },
+                                      {
+                                          "id":  "falloff",
+                                          "label":  "Caduta",
+                                          "drivenBy":  "costante",
+                                          "desc":  "Gaussiana sul raggio: decide quanto rapidamente l\u0027effetto muore.",
+                                          "value":  2.6
+                                      },
+                                      {
+                                          "id":  "multiSelect",
+                                          "label":  "Multi-selezione",
+                                          "drivenBy":  "utente",
+                                          "desc":  "Ctrl/⌘ click aggiunge una cella all\u0027insieme attivo; click semplice sostituisce.",
+                                          "value":  "click / ctrl-click"
+                                      }
+                                  ]
+                  },
+                  {
+                      "id":  "shape",
+                      "label":  "Shape",
+                      "desc":  "Tutta la griglia, con la stessa logica della cella ma distribuita per cella.",
+                      "drivers":  [
+                                      {
+                                          "id":  "amount",
+                                          "label":  "Compressione",
+                                          "drivenBy":  "level",
+                                          "desc":  "Ampiezza per cella, limitata a 0.6."
+                                      },
+                                      {
+                                          "id":  "vertical",
+                                          "label":  "Fronte verticale",
+                                          "drivenBy":  "level",
+                                          "desc":  "Il livello mappa sulle righe: alto -\u003e righe in alto, basso -\u003e righe in basso."
+                                      },
+                                      {
+                                          "id":  "randomness",
+                                          "label":  "Randomizzazione",
+                                          "drivenBy":  "hash(cella) + livello",
+                                          "desc":  "Quali celle vengono colpite; resta subordinata a compensazione e bordo fisso."
+                                      }
+                                  ]
+                  }
+              ],
+    "audio":  {
+                  "note":  "Mappa da raffinare con la ricerca in corso: quali grandezze estrarre e con quale priorita.",
+                  "proposedPriority":  [
+                                           "onset / kick (quando)",
+                                           "banda (dove nel canvas)",
+                                           "RMS / level (quanto)",
+                                           "derivata (velocita\u0027)"
+                                       ],
+                  "existingControls":  [
+                                           "sensitivity",
+                                           "minScale",
+                                           "maxScale",
+                                           "steps",
+                                           "attack",
+                                           "release",
+                                           "threshold",
+                                           "preset"
+                                       ],
+                  "polarityFix":  "CORRETTO: level = amt audio normalizzato (1 - scale)/(1 - minScale), 0 in silenzio e 1 sul picco. Prima era 1 - scale, quindi il picco dava zero effetto.",
+                  "dilution":  "La media della compensazione riduce la deformazione visibile (~0.44x con 5 colonne): da correggere con amt/(1-mean).",
+                  "chain":  {
+                                "onset":  "quando",
+                                "band":  "dove/quanto largo (raggio)",
+                                "rms":  "quanto profondo",
+                                "derivative":  "velocita"
+                            },
+                  "nextPass":  [
+                                   "raggio pilotato dalla banda (non dal level)",
+                                   "auto-gain lo/hi al posto di threshold",
+                                   "attack 4ms su onset, release 120-300ms",
+                                   "peak-hold nel debug invece dell\u0027istantaneo"
+                               ]
+              },
+    "debug":  {
+                  "toggle":  "showField (pannello Debug)",
+                  "renders":  [
+                                  "heat del raggio sulle celle (arancio, 18%)",
+                                  "contorno a meta\u0027 intensita\u0027 (viola)",
+                                  "raggio in celle = 1.4 + 4*level"
+                              ]
+              },
+    "notModulatable":  [
+                           "estensione della griglia",
+                           "posizione della griglia",
+                           "dimensioni minime/massime della cella (solo clamp)"
+                       ],
+    "presets":  {
+                    "model":  "Ogni preset e\u0027 un modulo di analisi (kick, snare, banda...). L\u0027utente NON regola l\u0027analisi: regola la forza con cui il modulo deforma la griglia.",
+                    "controls":  {
+                                     "attackRelease":  "smoothness di entrata e di ritorno del modulo",
+                                     "sensitivity":  "forza dell\u0027effetto: abbassandola la modulazione e\u0027 poco impattante",
+                                     "minMaxScale":  "impatto e raggio: 1 = cella di riferimento; valori negativi = la cella si rimpicciolisce invece di ingrandirsi; due punti definiscono il range min/max di larghezza e altezza",
+                                     "steps":  "interpretazione della curva: saw | triangle | quad | sine",
+                                     "threshold":  "taglio del segnale: basso = taglia meno, alto = inizia a tagliare"
+                                 },
+                    "kick":  {
+                                 "attack":  "4 ms",
+                                 "release":  "120 ms",
+                                 "clamp":  "isola i soli picchi",
+                                 "firstToImplement":  true
+                             }
+                }
 }

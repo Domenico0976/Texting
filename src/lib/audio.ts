@@ -27,6 +27,9 @@ export type CellAudioConfig = {
   minScale: number
   maxScale: number
   steps: number
+  wave?: 'sine' | 'saw' | 'triangle' | 'quad'
+  roamSeed?: number
+  roamBand?: number
   attack: number
   release: number
   threshold: number

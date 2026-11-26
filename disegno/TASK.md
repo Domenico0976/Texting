@@ -4,7 +4,11 @@
 - **platform:** figma (`gmorvNrypDXH59DHWP5chr` / "Texting") · 3 pagine
 - **phase:** PHASE 6 review (G23 pending) · feature Scene/Animation in design
 - **lastSession:** 2026-11-26
-- **next:** raggio dalla banda audio + correzione diluizione (amt/(1-mean)); poi A10 pannello scena dalla strip, A2 target picker, A3 ResponseCalibration
+- **next:** canvas minimali (trasparenti su card) fatti; restano tangenti punto->maniglia e stato hover completo; poi `Organism/ReactivityPanel`;
+- **LAB:** 5 pannelli con shadow + canvas senza sfondo (curve a punti, grid 0.14, snap dots, `0`/`1`, pill hover su Pulse) + spettro trasparente · `Audio` 1009, `Pulse` 1314, `Spectral` 946, `Stems` 914, `Snap & Hold` 849 · pagina 02: 62 set · 315 varianti
+- **LAB:** dock chiusa (10 varianti da istanze) · atomi pannello in `Row/Molecule/PanelCell` (5 set) + `Icon/info` · banco libero 1200×928 a x5873 · pagina 02: 62 set · 315 varianti
+- **LAB:** atomi dock costruiti — `View=Presets` (8 set, 26 varianti) in `Row/Molecule/DockCell`, `View=Scenes` (12 set, 36 varianti) in `Row/Molecule/SceneCell`, tutti token-bound
+- **dev:** kinetic grid stabile a 60 fps — quadranti a compensazione esatta, cell+shape in noisy-OR, preset/wave/threshold/steps/sensitivity/roam seed+band, debug ring, contatore fps; contratti in `controls/Kinetic-opt.json` e `LOGIC-PAGES/04` §10
 
 ## Stato
 | Layer | Stato |

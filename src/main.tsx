@@ -44,6 +44,13 @@ function App() {
   const [cells, setCells] = useState<CellCoord[]>([])
   const [additive, setAdditive] = useState(false)
   const [debugRing, setDebugRing] = useState(false)
+  const [fps, setFps] = useState(0)
+  useEffect(() => {
+    let raf = 0, n = 0, t0 = performance.now()
+    const tick = () => { n++; const t = performance.now(); if (t - t0 >= 500) { setFps(Math.round((n * 1000) / (t - t0))); n = 0; t0 = t } raf = requestAnimationFrame(tick) }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [])
   const [audioConfig, setAudioConfig] = useState<CellAudioConfig>({ ...configFromPreset('level'), enabled: false })
   const [audioDebug, setAudioDebug] = useState<CellAudioDebug | null>(null)
   useEffect(() => () => audioRef.current?.stop(), [])
@@ -90,7 +97,7 @@ function App() {
             {isSelect ? 'Picking cells' : 'Select cells'}
           </button>
           <span style={{ padding: '4px 8px', background: 'rgba(17,17,17,0.72)', color: '#bbb', borderRadius: 4, font: '11px ui-monospace, SFMono-Regular, Menlo, monospace' }}>
-            {selectedCell ? `cell ${selectedCell.x + 1} · ${selectedCell.y + 1}` : 'no cell'}
+            {fps} fps | {cells.length ? cells.length + " cell" + (cells.length > 1 ? "s" : "") : "no cell"}
           </span>
           {cells.length > 0 && (
             <button onClick={() => { setSelectedCell(null); setCells([]) }} title="Clear selection (Esc)"
@@ -98,7 +105,7 @@ function App() {
               Clear
             </button>
           )}
-          <button onClick={() => { const next = !shapeSelected; setShapeSelected(next); if (next) setSelectedCell(null) }}
+          <button onClick={() => setShapeSelected((v) => !v)}
             title="Modulate the whole shape instead of one cell"
             style={{ padding: '4px 10px', background: shapeSelected ? '#8b5cf6' : '#333', color: shapeSelected ? '#fff' : '#eee', border: 'none', cursor: 'pointer', borderRadius: 4 }}>
             {shapeSelected ? 'Shape selected' : 'Select shape'}
@@ -118,7 +125,6 @@ function App() {
           shapeSelected={shapeSelected}
           debugRing={debugRing}
           onCellSelect={(c: CellCoord | null) => {
-            setShapeSelected(false)
             setSelectedCell(c)
             if (!c) return
             setCells((prev) => {
