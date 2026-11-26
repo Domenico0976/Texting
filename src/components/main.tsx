@@ -257,6 +257,7 @@ export default function Quoin(raw: Props) {
         const amtAudio = Math.max(0, Math.min(1, (1 - cellScale) / Math.max(0.05, 1 - (raw.audioConfig?.minScale ?? 0.55))))
         U.audioAmt.value = audioActive ? amtAudio : 0
         U.ringOn.value = raw.debugRing ? 1 : 0
+        U.bandAmt.value = audioActive ? Math.max(0, Math.min(1, audio!.value('low-freq'))) : 0
         const audioNow = performance.now()
         if (debugCb.current && audioNow - lastAudioDebug > 100) {
           lastAudioDebug = audioNow
