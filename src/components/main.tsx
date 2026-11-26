@@ -32,10 +32,12 @@ type Props = {
   audioEngine?: AudioEngine | null
   audioConfig?: CellAudioConfig
   selectedCell?: CellCoord | null
+  selectedCells?: CellCoord[]
+  shapeSelected?: boolean
   onCellSelect?: (cell: CellCoord | null) => void
   onAudioDebug?: (debug: CellAudioDebug) => void
 }
-type RenderProps = Required<Omit<Props, 'audioEngine' | 'audioConfig' | 'selectedCell' | 'onCellSelect' | 'onAudioDebug'>>
+type RenderProps = Required<Omit<Props, 'audioEngine' | 'audioConfig' | 'selectedCell' | 'selectedCells' | 'shapeSelected' | 'onCellSelect' | 'onAudioDebug'>>
 const DEFAULTS: RenderProps = {
   glyph: 'reference', columns: 5, rows: 5, presetScale: true, randomDensity: 0.45, seed: 7, outside: 'empty', fillSpeed: 10,
   cornerRadius: 1, innerCorners: true, innerRadius: 1, padding: 0, breathe: 0, breatheRate: 0.25, cycle: false, cyclePeriod: 4, cycleStagger: 0.5,
@@ -211,6 +213,7 @@ export default function Quoin(raw: Props) {
         if (!pt.down) dragAction = -1
 
         // ease every cell: pending preset cells, fill toward target, hover toward the pointer, flash decay
+        const mark = new Set<string>((raw.selectedCells ?? []).map(c => c.x + ':' + c.y))
         const kf = p.fillSpeed >= 30 ? 1 : 1 - Math.exp(-real * p.fillSpeed)
         const kh = 1 - Math.exp(-real * p.hoverEase), kd = Math.exp(-real * 4)
         let changed = false
@@ -226,30 +229,34 @@ export default function Quoin(raw: Props) {
           let fl = flash[i] * kd; if (fl < 0.002) fl = 0
           flash[i] = fl
           const o = i * 4, r = Math.round(f * 255), g = Math.round(hv * 255), b = Math.round(fl * 255)
-          if (data[o] !== r || data[o + 1] !== g || data[o + 2] !== b) { data[o] = r; data[o + 1] = g; data[o + 2] = b; data[o + 3] = 255; changed = true }
+          const a = mark.has(x + ':' + y) ? 255 : 0
+          if (data[o] !== r || data[o + 1] !== g || data[o + 2] !== b || data[o + 3] !== a) { data[o] = r; data[o + 1] = g; data[o + 2] = b; data[o + 3] = a; changed = true }
         }
         if (changed) tex.needsUpdate = true
 
-        // selected-cell audio: analysis runs on the existing frame loop, but only
-        // a selected filled cell is allowed to receive the reactive scale.
+        // selected-cell (or whole-shape) audio: the analysis runs on the existing frame loop; the
+        // scale is then applied as a warp of the grid space, never as a scale of the cell body.
         const audio = raw.audioEngine
         const audioConfig = raw.audioConfig ?? DEFAULT_AUDIO
         const selected = selectedRef.current
+        const shapeOn = !!raw.shapeSelected
         const selectedFilled = !!selected && selected.x >= 0 && selected.y >= 0 && selected.x < cols && selected.y < rows && fill[idx(selected.x, selected.y)] > 0.5
-        const audioActive = !!audio?.ready && audioConfig.enabled && !!selected && selectedFilled
+        const audioActive = !!audio?.ready && audioConfig.enabled && (shapeOn || !!selected)
         if (audio) audio.update(performance.now())
         const rawSignal = audioActive ? audio.value(audioConfig.reactTo, { band: audioConfig.band, trigger: audioConfig.trigger }) : 0
         const shaped = audioActive ? shapeCellSignal(rawSignal, audioConfig, real, follower) : 0
-        const cellScale = audioActive ? resolveCellScale(selected, selectedFilled, audioConfig, shaped) : 1
+        const probe = shapeOn ? { x: 0, y: 0 } : selected
+        const cellScale = audioActive ? resolveCellScale(probe, shapeOn || selectedFilled, audioConfig, shaped) : 1
         if (!audioActive) follower.value = 0
         if (selected) U.selectedCell.value.set(selected.x, selected.y)
         else U.selectedCell.value.set(-1, -1)
         U.selectedOn.value = selected ? 1 : 0
+        U.shapeOn.value = shapeOn ? 1 : 0
         U.selectedScale.value = cellScale
         const audioNow = performance.now()
         if (debugCb.current && audioNow - lastAudioDebug > 100) {
           lastAudioDebug = audioNow
-          debugCb.current({ selected, filled: selectedFilled, raw: rawSignal, shaped, scale: cellScale, enabled: audioActive, reaction: audioConfig.reactTo, engineReady: !!audio?.ready, configEnabled: audioConfig.enabled, hasSelection: !!selected, engineId: audio?.id ?? '' })
+          debugCb.current({ selected, filled: shapeOn || selectedFilled, raw: rawSignal, shaped, scale: cellScale, enabled: audioActive, reaction: audioConfig.reactTo, engineReady: !!audio?.ready, configEnabled: audioConfig.enabled, hasSelection: shapeOn || !!selected, engineId: audio?.id ?? '' })
         }
 
         // corners: radius in cell units (half a cell at 1), breathing on a cosine

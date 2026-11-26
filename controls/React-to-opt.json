@@ -1,0 +1,136 @@
+{
+  "name": "React-to-opt",
+  "version": "2.1.0",
+  "depth": 3,
+  "depthRule": "Three levels only: lv1 = element of the selected scene, lv2 = branch, lv3 = the parameter that receives the modulation. Grouping is the 'group' field of each lv3 entry, rendered as a heading inside the lv3 column. Picker columns = Scene | Element | Branch | Parameter.",
+  "membershipRule": "Only entries that CAN be modulated by audio exist here. A property that cannot receive a modulation is not listed at all: it lives exclusively in the panel that owns it (Appearance, Grid, Export). Hiding it removes noise from the picker.",
+  "ownershipRule": "This file owns per-element audio modulation only. Scene flow, scene timing and transitions live in Scenes-opt.json.",
+  "rules": {
+    "uniquePath": "One modulator per exact lv1/lv2/lv3 path. Different paths on the same element are allowed.",
+    "audioCeiling": "The value set in the panel is the CEILING: audio drives the parameter from 0 to that value, never beyond.",
+    "audioEasing": "Every modulated parameter owns its easing (attack, release, curve), set in the panel that owns the parameter.",
+    "noiseScope": "Noise is a shape-level field that randomizes the cells. It is not a texture over the shape and does not modify the drawing.",
+    "noiseLoop": "Proportional loop on stretch, seamless, responsive to the current columns/rows. One noise per shape.",
+    "cellPicker": "A cell target is picked on the canvas, never from a list.",
+    "effectLevel": "A lv3 entry of kind 'effect' is the effect itself. Its parameters are not a fourth picker level: they open in the effect panel (Noise), where each one declares its own modulation slot."
+  },
+  "lv1": [
+    {
+      "id": "shape",
+      "label": "Shape",
+      "desc": "A glyph layer of the selected scene. The only element that owns Effects.",
+      "lv2": [
+        {
+          "id": "parameters",
+          "label": "Parameters",
+          "desc": "Numeric properties of the shape.",
+          "lv3": [
+            { "id": "offsetX", "label": "Offset X", "group": "Transform", "kind": "number", "desc": "Horizontal position of the shape in the scene." },
+            { "id": "offsetY", "label": "Offset Y", "group": "Transform", "kind": "number", "desc": "Vertical position of the shape in the scene." },
+            { "id": "scale", "label": "Scale", "group": "Transform", "kind": "number", "desc": "Uniform scale of the shape." },
+            { "id": "rotation", "label": "Rotation", "group": "Transform", "kind": "number", "desc": "Rotation of the shape around its centre." },
+            { "id": "opacity", "label": "Opacity", "group": "Transform", "kind": "number", "desc": "Opacity of the whole shape." },
+            { "id": "cellScale", "label": "Cell scale", "group": "Appearance", "kind": "number", "desc": "Scale of every cell of the shape, around its own centre." },
+            { "id": "cornerRadius", "label": "Corner radius", "group": "Appearance", "kind": "number", "desc": "Corner radius of the cells. Keeps the merge between neighbours." },
+            { "id": "padding", "label": "Cell padding", "group": "Appearance", "kind": "number", "desc": "Space around each cell inside the shape." },
+            { "id": "cellGap", "label": "Cell gap", "group": "Cells", "kind": "number", "desc": "Gap between adjacent cells." },
+            { "id": "cellDensity", "label": "Cell density", "group": "Cells", "kind": "number", "desc": "How many cells of the shape stay filled." }
+          ]
+        },
+        {
+          "id": "effects",
+          "label": "Effects",
+          "desc": "Effects applied to the shape. Only Noise in this version.",
+          "lv3": [
+            {
+              "id": "noise",
+              "label": "Noise",
+              "group": "Effects",
+              "kind": "effect",
+              "desc": "Audio-driven field that randomizes the cells of this shape. Each filled cell samples its own quadrant and varies scale, offset, opacity and animation speed. It does not move the cell out of its quadrant and does not overwrite the drawing.",
+              "panel": "noise",
+              "scope": "all-cells",
+              "model": {
+                "type": "summed-directional-impulses",
+                "presets": ["Blobs", "Stripes", "Grain", "Duotone", "Composite"],
+                "outputs": ["cellScale", "cellOffset", "cellOpacity", "cellSpeed"]
+              },
+              "params": [
+                { "id": "preset", "label": "Preset", "group": "Field", "kind": "enum", "modulatable": false, "desc": "Starting recipe of the field: Blobs, Stripes, Grain, Duotone, Composite." },
+                { "id": "scale", "label": "Scale", "group": "Field", "kind": "number", "modulatable": true, "desc": "Size of the field features relative to the shape." },
+                { "id": "detail", "label": "Detail", "group": "Field", "kind": "number", "modulatable": true, "desc": "Number of impulses summed: 1 = smooth blobs, 8 = dense texture." },
+                { "id": "roughness", "label": "Roughness", "group": "Field", "kind": "number", "modulatable": true, "desc": "Threshold that cuts the field: low = soft blobs, high = hard grain." },
+                { "id": "distortion", "label": "Distortion", "group": "Field", "kind": "number", "modulatable": true, "desc": "Jitter of the direction vector: warps and smears the features." },
+                { "id": "direction", "label": "Direction", "group": "Advanced", "kind": "number", "modulatable": true, "desc": "Direction of the impulses, in degrees." },
+                { "id": "aniso", "label": "Aniso", "group": "Advanced", "kind": "number", "modulatable": true, "desc": "Anisotropy: 0 = round features, 1-2 = stretched along the direction." },
+                { "id": "bandwidth", "label": "Bandwidth", "group": "Advanced", "kind": "number", "modulatable": true, "desc": "Width of each impulse (0.5, 1, 2, 4)." },
+                { "id": "impulses", "label": "Impulses", "group": "Advanced", "kind": "number", "modulatable": true, "desc": "How many impulses are summed (1, 2, 4, 8)." },
+                { "id": "thresholdLow", "label": "Less than", "group": "Threshold", "kind": "number", "modulatable": true, "desc": "Lower cut: values below stay untouched." },
+                { "id": "thresholdHigh", "label": "More than", "group": "Threshold", "kind": "number", "modulatable": true, "desc": "Upper cut: values above clamp to the maximum variation." },
+                { "id": "outCellScale", "label": "Cell scale", "group": "Output", "kind": "number", "modulatable": true, "desc": "How much of the field value becomes cell scale variation." },
+                { "id": "outCellOffset", "label": "Cell offset", "group": "Output", "kind": "number", "modulatable": true, "desc": "How much of the field value becomes cell offset variation." },
+                { "id": "outCellOpacity", "label": "Cell opacity", "group": "Output", "kind": "number", "modulatable": true, "desc": "How much of the field value becomes cell opacity variation." },
+                { "id": "outCellSpeed", "label": "Cell speed", "group": "Output", "kind": "number", "modulatable": true, "desc": "How much of the field value becomes cell animation speed variation." },
+                { "id": "speed", "label": "Speed", "group": "Animation", "kind": "number", "modulatable": true, "desc": "Speed of the field evolution over time." },
+                { "id": "seed", "label": "Seed", "group": "Animation", "kind": "number", "modulatable": false, "desc": "Deterministic seed of the field." },
+                { "id": "loopProportional", "label": "Loop proportional", "group": "Animation", "kind": "boolean", "modulatable": false, "desc": "Keeps the loop proportional when the shape is stretched." },
+                { "id": "seamless", "label": "Seamless loop", "group": "Animation", "kind": "boolean", "modulatable": false, "desc": "Tiles the field with no visible seam." },
+                { "id": "gridResponsive", "label": "Responsive to grid", "group": "Animation", "kind": "boolean", "modulatable": false, "desc": "Re-tiles the field to the current columns/rows." }
+              ],
+              "audioModulation": {
+                "slot": "Every param with modulatable: true takes one slot: source, amount (ceiling = the panel value), easing (attack, release, curve).",
+                "sourceTypes": ["dB", "Stems", "MIDI", "BPM", "Snap & Hold"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "group",
+      "label": "Group",
+      "desc": "A group of layers of the selected scene. No Effects in this version.",
+      "lv2": [
+        {
+          "id": "parameters",
+          "label": "Parameters",
+          "desc": "Numeric properties of the group.",
+          "lv3": [
+            { "id": "offsetX", "label": "Offset X", "group": "Transform", "kind": "number", "desc": "Horizontal position of the group." },
+            { "id": "offsetY", "label": "Offset Y", "group": "Transform", "kind": "number", "desc": "Vertical position of the group." },
+            { "id": "scale", "label": "Scale", "group": "Transform", "kind": "number", "desc": "Scale of the group." },
+            { "id": "rotation", "label": "Rotation", "group": "Transform", "kind": "number", "desc": "Rotation of the group." },
+            { "id": "opacity", "label": "Opacity", "group": "Transform", "kind": "number", "desc": "Opacity of the whole group." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cell",
+      "label": "Cell",
+      "desc": "A single cell of a shape, picked on the canvas.",
+      "lv2": [
+        {
+          "id": "transform",
+          "label": "Transform",
+          "desc": "Motion of this cell inside its own quadrant.",
+          "lv3": [
+            { "id": "offsetX", "label": "Offset X", "group": "Transform", "kind": "number", "desc": "Horizontal offset of the cell inside its quadrant." },
+            { "id": "offsetY", "label": "Offset Y", "group": "Transform", "kind": "number", "desc": "Vertical offset of the cell inside its quadrant." },
+            { "id": "scale", "label": "Scale", "group": "Transform", "kind": "number", "desc": "Scale of the cell around its own centre, position unchanged." },
+            { "id": "rotation", "label": "Rotation", "group": "Transform", "kind": "number", "desc": "Rotation of the cell around its own centre." }
+          ]
+        },
+        {
+          "id": "appearance",
+          "label": "Appearance",
+          "desc": "Look of this cell.",
+          "lv3": [
+            { "id": "opacity", "label": "Opacity", "group": "Appearance", "kind": "number", "desc": "Opacity of this cell." },
+            { "id": "cornerRadius", "label": "Corner radius", "group": "Appearance", "kind": "number", "desc": "Corner radius of this cell; the merge with neighbours follows it." }
+          ]
+        }
+      ]
+    }
+  ]
+}

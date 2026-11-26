@@ -40,9 +40,33 @@ function App() {
   const audioRef = useRef<AudioEngine | null>(null)
   if (!audioRef.current) audioRef.current = new AudioEngine()
   const [selectedCell, setSelectedCell] = useState<CellCoord | null>(null)
+  const [shapeSelected, setShapeSelected] = useState(false)
+  const [cells, setCells] = useState<CellCoord[]>([])
   const [audioConfig, setAudioConfig] = useState<CellAudioConfig>({ ...configFromPreset('level'), enabled: false })
   const [audioDebug, setAudioDebug] = useState<CellAudioDebug | null>(null)
   useEffect(() => () => audioRef.current?.stop(), [])
+
+  // Cell picking: the canvas already reports the cell under a press when tool === 'select';
+  // this is the entry point that switches the tool on and off and shows what is selected.
+  const tool = values.tool as string | undefined
+  const isSelect = tool === 'select'
+  const prevTool = useRef<string>('toggle')
+  const toggleSelect = () => {
+    if (tool === 'select') set('tool', prevTool.current || 'toggle')
+    else { prevTool.current = tool || 'toggle'; set('tool', 'select') }
+  }
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null
+      const typing = !!el && (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA')
+      if (e.key === 'Escape') { setSelectedCell(null); setCells([]); return }
+      if (typing || e.metaKey || e.ctrlKey || e.altKey) return
+      if (e.key.toLowerCase() === 'c') { e.preventDefault(); toggleSelect() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
   const Variant = variants[variantId] ?? (() => null)
 
   return (
@@ -56,12 +80,49 @@ function App() {
             </button>
           ))}
         </div>
+        <div style={{ position: 'absolute', top: 44, left: 8, zIndex: 10, display: 'flex', gap: 6, alignItems: 'center' }}>
+          <button onClick={toggleSelect} title="Pick a cell on the canvas (C)"
+            style={{ padding: '4px 10px', display: 'flex', gap: 6, alignItems: 'center', background: isSelect ? '#8b5cf6' : '#333', color: isSelect ? '#fff' : '#eee', border: 'none', cursor: 'pointer', borderRadius: 4 }}>
+            <span aria-hidden style={{ width: 8, height: 8, border: '1.5px solid currentColor', borderRadius: 2, display: 'inline-block' }} />
+            {isSelect ? 'Picking cells' : 'Select cells'}
+          </button>
+          <span style={{ padding: '4px 8px', background: 'rgba(17,17,17,0.72)', color: '#bbb', borderRadius: 4, font: '11px ui-monospace, SFMono-Regular, Menlo, monospace' }}>
+            {selectedCell ? `cell ${selectedCell.x + 1} · ${selectedCell.y + 1}` : 'no cell'}
+          </span>
+          {cells.length > 0 && (
+            <button onClick={() => { setSelectedCell(null); setCells([]) }} title="Clear selection (Esc)"
+              style={{ padding: '4px 8px', background: '#333', color: '#eee', border: 'none', cursor: 'pointer', borderRadius: 4 }}>
+              Clear
+            </button>
+          )}
+          <button onClick={() => { const next = !shapeSelected; setShapeSelected(next); if (next) setSelectedCell(null) }}
+            title="Modulate the whole shape instead of one cell"
+            style={{ padding: '4px 10px', background: shapeSelected ? '#8b5cf6' : '#333', color: shapeSelected ? '#fff' : '#eee', border: 'none', cursor: 'pointer', borderRadius: 4 }}>
+            {shapeSelected ? 'Shape selected' : 'Select shape'}
+          </button>
+          {(isSelect || shapeSelected) && (
+            <span style={{ color: '#9a9aa5', fontSize: 11 }}>
+              {shapeSelected ? 'whole shape warps · click Select shape to exit' : 'click a filled cell · Esc clears · C exits'}
+            </span>
+          )}
+        </div>
         <Variant
           {...values}
           audioEngine={audioRef.current}
           audioConfig={audioConfig}
           selectedCell={selectedCell}
-          onCellSelect={setSelectedCell}
+          selectedCells={cells}
+          shapeSelected={shapeSelected}
+          onCellSelect={(c: CellCoord | null) => {
+            setShapeSelected(false)
+            setSelectedCell(c)
+            if (!c) return
+            setCells((prev) => {
+              const i = prev.findIndex((q) => q.x === c.x && q.y === c.y)
+              if (i >= 0) return prev.filter((_, k) => k !== i)
+              return [...prev, c]
+            })
+          }}
           onAudioDebug={setAudioDebug}
         />
         <CellAudioPanel

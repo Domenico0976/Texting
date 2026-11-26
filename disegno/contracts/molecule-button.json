@@ -1,0 +1,23 @@
+{
+  "master": "Molecule/Button",
+  "level": "L2",
+  "does": "Esegue l'azione principale o secondaria di una regione.",
+  "receives": { "label": "string", "icon": "Icon/* | null", "disabled": "boolean" },
+  "allows": ["click", "keyboard Enter/Space"],
+  "variants": {
+    "Appearance": ["Primary", "Secondary", "Outline", "Ghost", "Destructive"],
+    "State": ["Default", "Hover", "Disabled"]
+  },
+  "tokens": {
+    "Primary": { "fill": "primary", "text": "primary-foreground" },
+    "Secondary": { "fill": "secondary", "text": "secondary-foreground" },
+    "Outline": { "fill": "background", "stroke": "input", "text": "foreground" },
+    "Ghost": { "fill": "transparent", "text": "muted-foreground" },
+    "Destructive": { "fill": "destructive", "text": "destructive-foreground" }
+  },
+  "geometry": { "height": 32, "paddingX": 12, "gap": 6, "radius": 8, "text": "Type/Subtitle 13/20" },
+  "states": ["default", "hover", "focus (ring)", "disabled", "loading (icon spinner, label invariata)"],
+  "surfaceContexts": ["card", "popover", "background", "sidebar"],
+  "a11y": { "contrast": "5.7:1 – 17.2:1 (CONTRAST-MATRIX)", "targets": "32px desktop", "keyboard": "focus ring visibile, Enter/Space" },
+  "codePath": "src/components/ui/button.tsx (PHASE 7)"
+}

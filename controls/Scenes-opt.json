@@ -1,0 +1,126 @@
+{
+  "name": "Scenes-opt",
+  "version": "1.0.0",
+  "depth": 3,
+  "purpose": "Settings of the scene flow: what happens inside a scene and at the boundary between two scenes. It is not an audio-target list; audio modulation lives in React-to-opt.json.",
+  "ownershipRule": "React-to owns the single layer (audio -> parameter). Scenes-opt owns the scene as a block (timing, display, playback) and the boundary between two scenes (out of scene N, in of scene N+1).",
+  "panelRule": "The scene panel opens from the scene field in the Scenes strip (not from React-to) and always shows the settings of the SELECTED scene. Switching scene switches the content of the same panel; nothing is duplicated per scene.",
+  "boundaryRule": "A boundary has two independent slots: Out (end of scene N) and In (start of scene N+1). Set one, the other, or both. Fade out on scene 1 + fade in on scene 2 are two slots on the same boundary; a fade in only on scene 2 is a single In slot. The strip shows them at the correct side of the boundary.",
+  "depthRule": "Three levels: lv1 = scope (scene / boundary / project), lv2 = branch, lv3 = the setting. Grouping is the 'group' field of each lv3 entry.",
+  "lv1": [
+    {
+      "id": "scene",
+      "label": "Scene",
+      "desc": "The selected scene as a block of the timeline. Editing here never moves the user into React-to.",
+      "lv2": [
+        {
+          "id": "timing",
+          "label": "Timing",
+          "desc": "Where the scene sits in the timeline and how it ends.",
+          "lv3": [
+            { "id": "start", "label": "Start", "group": "Range", "kind": "readonly", "desc": "Start time of the scene, derived from the previous scene and its transitions." },
+            { "id": "end", "label": "End", "group": "Range", "kind": "readonly", "desc": "End time of the scene, derived from its duration." },
+            { "id": "duration", "label": "Duration", "group": "Range", "kind": "number", "unit": "ms", "desc": "Length of the scene. Changing it moves every following scene." },
+            { "id": "snap", "label": "Snap", "group": "Range", "kind": "enum", "options": ["Frame", "50 ms", "Second"], "desc": "Grid the duration and the playhead snap to." }
+          ]
+        },
+        {
+          "id": "playback",
+          "label": "Playback",
+          "desc": "How the scene runs when the playhead crosses it.",
+          "lv3": [
+            { "id": "speed", "label": "Speed", "group": "Playback", "kind": "number", "desc": "Playback speed of this scene (1 = real time)." },
+            { "id": "holdLastFrame", "label": "Hold last frame", "group": "Playback", "kind": "boolean", "desc": "Keeps the last rendered frame visible after the scene ends." },
+            { "id": "loopToStart", "label": "Loops to start", "group": "Playback", "kind": "boolean", "desc": "Loops back to the scene start instead of the global loop." }
+          ]
+        },
+        {
+          "id": "display",
+          "label": "Grid & export",
+          "desc": "The grid is the drawing aid: it is hidden in animation and in export unless the export asks for it. These values only affect the exported/rendered scene.",
+          "lv3": [
+            { "id": "showGridInExport", "label": "Show grid in export", "group": "Grid", "kind": "boolean", "desc": "Renders the grid lines in the exported video. Off by default: the grid is a drawing aid." },
+            { "id": "gridColor", "label": "Grid color", "group": "Grid", "kind": "color", "desc": "Line colour used only when Show grid in export is on." },
+            { "id": "gridLineWidth", "label": "Line width", "group": "Grid", "kind": "number", "desc": "Line width of the exported grid." },
+            { "id": "gridLineOpacity", "label": "Line opacity", "group": "Grid", "kind": "number", "desc": "Line opacity of the exported grid." }
+          ]
+        },
+        {
+          "id": "content",
+          "label": "Content",
+          "desc": "What belongs to this scene. Read-only here: the layer stack is edited in the Layers panel.",
+          "lv3": [
+            { "id": "layers", "label": "Layers", "group": "Stack", "kind": "list", "desc": "Layers of this scene, in draw order. Each row opens its layer and its React-to modulations." },
+            { "id": "modulations", "label": "Modulations", "group": "Stack", "kind": "readonly", "desc": "Number of audio modulations attached to the layers of this scene, with a jump to the React-to panel of the selected layer." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "boundary",
+      "label": "Boundary",
+      "desc": "The seam between scene N and scene N+1. It appears in the strip between the two scene fields.",
+      "lv2": [
+        {
+          "id": "outgoing",
+          "label": "Out",
+          "desc": "How the outgoing scene (N) leaves.",
+          "lv3": [
+            { "id": "outType", "label": "Type", "group": "Out", "kind": "enum", "options": ["None", "Cut", "Fade", "Slide", "Zoom", "Morph"], "desc": "Exit animation of the outgoing scene. None leaves the scene until its last frame." },
+            { "id": "outDuration", "label": "Duration", "group": "Out", "kind": "number", "unit": "ms", "desc": "Length of the exit. Never longer than the outgoing scene." },
+            { "id": "outEasing", "label": "Easing", "group": "Out", "kind": "enum", "options": ["Linear", "Ease out", "Ease in out", "Expo"], "desc": "Curve of the exit." }
+          ]
+        },
+        {
+          "id": "incoming",
+          "label": "In",
+          "desc": "How the incoming scene (N+1) enters.",
+          "lv3": [
+            { "id": "inType", "label": "Type", "group": "In", "kind": "enum", "options": ["None", "Cut", "Fade", "Slide", "Zoom", "Morph"], "desc": "Enter animation of the incoming scene." },
+            { "id": "inDuration", "label": "Duration", "group": "In", "kind": "number", "unit": "ms", "desc": "Length of the enter. Never longer than the incoming scene." },
+            { "id": "inEasing", "label": "Easing", "group": "In", "kind": "enum", "options": ["Linear", "Ease in", "Ease in out", "Expo"], "desc": "Curve of the enter." }
+          ]
+        },
+        {
+          "id": "pairing",
+          "label": "Pairing",
+          "desc": "How the two slots behave together.",
+          "lv3": [
+            { "id": "syncSides", "label": "Match out and in", "group": "Pairing", "kind": "boolean", "desc": "On: one transition drawn across the seam (out and in share type and duration). Off: two independent slots, e.g. fade out only, or fade in only." },
+            { "id": "overlap", "label": "Overlap", "group": "Pairing", "kind": "number", "unit": "ms", "desc": "How much the out and the in overlap at the seam. 0 = sequential." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "project",
+      "label": "Project",
+      "desc": "Defaults used by every scene and by the export.",
+      "lv2": [
+        {
+          "id": "defaults",
+          "label": "Defaults",
+          "desc": "Values applied to new scenes and boundaries.",
+          "lv3": [
+            { "id": "defaultDuration", "label": "Scene duration", "group": "Defaults", "kind": "number", "unit": "ms", "desc": "Duration given to a new scene." },
+            { "id": "defaultOutDuration", "label": "Out duration", "group": "Defaults", "kind": "number", "unit": "ms", "desc": "Exit duration given to a new boundary." },
+            { "id": "defaultInDuration", "label": "In duration", "group": "Defaults", "kind": "number", "unit": "ms", "desc": "Enter duration given to a new boundary." },
+            { "id": "defaultEasing", "label": "Easing", "group": "Defaults", "kind": "enum", "options": ["Linear", "Ease out", "Ease in", "Ease in out", "Expo"], "desc": "Curve given to a new boundary." }
+          ]
+        },
+        {
+          "id": "export",
+          "label": "Export",
+          "desc": "Output of the whole scene flow.",
+          "lv3": [
+            { "id": "fps", "label": "Frame rate", "group": "Export", "kind": "enum", "options": ["24", "30", "60"], "desc": "Frame rate of the exported video." },
+            { "id": "width", "label": "Width", "group": "Export", "kind": "number", "desc": "Pixel width of the export." },
+            { "id": "height", "label": "Height", "group": "Export", "kind": "number", "desc": "Pixel height of the export." },
+            { "id": "format", "label": "Format", "group": "Export", "kind": "enum", "options": ["MP4", "WebM", "PNG sequence"], "desc": "Container/codec of the export." },
+            { "id": "loopExport", "label": "Loop the export", "group": "Export", "kind": "boolean", "desc": "Repeats the whole scene flow in the output file." }
+          ]
+        }
+      ]
+    }
+  ]
+}

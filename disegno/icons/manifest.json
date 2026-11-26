@@ -1,0 +1,462 @@
+{
+    "version":  1,
+    "set":  "lucide",
+    "prefix":  "lucide",
+    "license":  "ISC",
+    "height":  24,
+    "style":  "outline -- 1.5px round -- 24",
+    "source":  "https://iconify.design",
+    "icons":  [
+                  {
+                      "name":  "home",
+                      "concept":  "home",
+                      "label":  "home",
+                      "path":  "disegno/icons/lucide/home.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "layout-grid",
+                      "concept":  "layout-grid",
+                      "label":  "layout-grid",
+                      "path":  "disegno/icons/lucide/layout-grid.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "settings",
+                      "concept":  "settings",
+                      "label":  "settings",
+                      "path":  "disegno/icons/lucide/settings.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "search",
+                      "concept":  "search",
+                      "label":  "search",
+                      "path":  "disegno/icons/lucide/search.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "plus",
+                      "concept":  "plus",
+                      "label":  "plus",
+                      "path":  "disegno/icons/lucide/plus.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "x",
+                      "concept":  "x",
+                      "label":  "x",
+                      "path":  "disegno/icons/lucide/x.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "check",
+                      "concept":  "check",
+                      "label":  "check",
+                      "path":  "disegno/icons/lucide/check.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "chevron-down",
+                      "concept":  "chevron-down",
+                      "label":  "chevron-down",
+                      "path":  "disegno/icons/lucide/chevron-down.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "chevron-right",
+                      "concept":  "chevron-right",
+                      "label":  "chevron-right",
+                      "path":  "disegno/icons/lucide/chevron-right.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "chevron-up",
+                      "concept":  "chevron-up",
+                      "label":  "chevron-up",
+                      "path":  "disegno/icons/lucide/chevron-up.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "more-horizontal",
+                      "concept":  "more-horizontal",
+                      "label":  "more-horizontal",
+                      "path":  "disegno/icons/lucide/more-horizontal.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "panel-left",
+                      "concept":  "panel-left",
+                      "label":  "panel-left",
+                      "path":  "disegno/icons/lucide/panel-left.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "panel-right",
+                      "concept":  "panel-right",
+                      "label":  "panel-right",
+                      "path":  "disegno/icons/lucide/panel-right.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "play",
+                      "concept":  "play",
+                      "label":  "play",
+                      "path":  "disegno/icons/lucide/play.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "pause",
+                      "concept":  "pause",
+                      "label":  "pause",
+                      "path":  "disegno/icons/lucide/pause.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "upload",
+                      "concept":  "upload",
+                      "label":  "upload",
+                      "path":  "disegno/icons/lucide/upload.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "download",
+                      "concept":  "download",
+                      "label":  "download",
+                      "path":  "disegno/icons/lucide/download.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "image",
+                      "concept":  "image",
+                      "label":  "image",
+                      "path":  "disegno/icons/lucide/image.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "music",
+                      "concept":  "music",
+                      "label":  "music",
+                      "path":  "disegno/icons/lucide/music.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "grid-3x3",
+                      "concept":  "grid-3x3",
+                      "label":  "grid-3x3",
+                      "path":  "disegno/icons/lucide/grid-3x3.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "layers",
+                      "concept":  "layers",
+                      "label":  "layers",
+                      "path":  "disegno/icons/lucide/layers.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "mouse-pointer-2",
+                      "concept":  "mouse-pointer-2",
+                      "label":  "mouse-pointer-2",
+                      "path":  "disegno/icons/lucide/mouse-pointer-2.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "pencil",
+                      "concept":  "pencil",
+                      "label":  "pencil",
+                      "path":  "disegno/icons/lucide/pencil.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "eraser",
+                      "concept":  "eraser",
+                      "label":  "eraser",
+                      "path":  "disegno/icons/lucide/eraser.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "undo-2",
+                      "concept":  "undo-2",
+                      "label":  "undo-2",
+                      "path":  "disegno/icons/lucide/undo-2.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "redo-2",
+                      "concept":  "redo-2",
+                      "label":  "redo-2",
+                      "path":  "disegno/icons/lucide/redo-2.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "save",
+                      "concept":  "save",
+                      "label":  "save",
+                      "path":  "disegno/icons/lucide/save.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "copy",
+                      "concept":  "copy",
+                      "label":  "copy",
+                      "path":  "disegno/icons/lucide/copy.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "trash-2",
+                      "concept":  "trash-2",
+                      "label":  "trash-2",
+                      "path":  "disegno/icons/lucide/trash-2.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "sun",
+                      "concept":  "sun",
+                      "label":  "sun",
+                      "path":  "disegno/icons/lucide/sun.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "moon",
+                      "concept":  "moon",
+                      "label":  "moon",
+                      "path":  "disegno/icons/lucide/moon.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "keyboard",
+                      "concept":  "keyboard",
+                      "label":  "keyboard",
+                      "path":  "disegno/icons/lucide/keyboard.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "alert-circle",
+                      "concept":  "alert-circle",
+                      "label":  "alert-circle",
+                      "path":  "disegno/icons/lucide/alert-circle.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "move",
+                      "concept":  "move",
+                      "label":  "move",
+                      "path":  "disegno/icons/lucide/move.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "maximize-2",
+                      "concept":  "maximize-2",
+                      "label":  "maximize-2",
+                      "path":  "disegno/icons/lucide/maximize-2.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "zoom-in",
+                      "concept":  "zoom-in",
+                      "label":  "zoom-in",
+                      "path":  "disegno/icons/lucide/zoom-in.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "zoom-out",
+                      "concept":  "zoom-out",
+                      "label":  "zoom-out",
+                      "path":  "disegno/icons/lucide/zoom-out.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "volume-2",
+                      "concept":  "volume-2",
+                      "label":  "volume-2",
+                      "path":  "disegno/icons/lucide/volume-2.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "mic",
+                      "concept":  "mic",
+                      "label":  "mic",
+                      "path":  "disegno/icons/lucide/mic.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "heart",
+                      "concept":  "heart",
+                      "label":  "heart",
+                      "path":  "disegno/icons/lucide/heart.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  },
+                  {
+                      "name":  "arrow-right",
+                      "concept":  "arrow-right",
+                      "label":  "arrow-right",
+                      "path":  "disegno/icons/lucide/arrow-right.svg",
+                      "decorative":  false,
+                      "addedAt":  "2026-11-25",
+                      "usedIn":  [
+
+                                 ]
+                  }
+              ]
+}

@@ -44,7 +44,7 @@ export const makeUniforms = (tex: THREE.DataTexture) => ({
   // frame
   framePadding: uniform(0.06), offset: uniform(new THREE.Vector2(0, 0)), zoom: uniform(1), aa: uniform(0.8),
   // selected-cell audio reactivity
-  selectedCell: uniform(new THREE.Vector2(-1, -1)), selectedOn: uniform(0), selectedScale: uniform(1),
+  selectedCell: uniform(new THREE.Vector2(-1, -1)), selectedOn: uniform(0), selectedScale: uniform(1), shapeOn: uniform(0),
   // debug
   showField: uniform(0), showCells: uniform(0),
   // the cell grid
@@ -144,24 +144,61 @@ export const buildPicture = (U: Uniforms) => {
     const cellPx = min(S.x.sub(padPx.mul(2)).div(U.cols), S.y.sub(padPx.mul(2)).div(U.rows)).mul(U.zoom).max(1)
     const gridPx = vec2(U.cols, U.rows).mul(cellPx)
     const origin = S.sub(gridPx).mul(0.5).add(U.offset.mul(short))
-    const c = pPx.sub(origin).div(cellPx)
+    const cu = pPx.sub(origin).div(cellPx)          // unwarped: the grid before the manipulation
+    // Kinetic grid: a cell changes size and the rest of its row/column absorbs the difference, so
+    // lines stay straight and the grid keeps its exact extent. WHICH cells are touched is a radius:
+    // the nearest selected quadrant is read from the selection channel of the cell texture and the
+    // radius grows with the audio level (high = more cells compensate, low = fewer).
+    const ixc = floor(cu.x), iyc = floor(cu.y)
+    const recalc = (x: any, i: any, s: any, f: any): any => {
+      const before = x.mul(f)
+      const inside = i.mul(f).add(x.sub(i).mul(s))
+      const after = i.mul(f).add(s).add(x.sub(i).sub(1).mul(f))
+      return mix(mix(before, inside, step(i, x)), after, step(i.add(1), x))
+    }
+    // Kinetic grid: per-cell sizes with a cumulative map. Every quadrant has its own width and
+    // height, the sizes always sum to the grid extent (compensation built in), and the SDF gets
+    // (index + u) from the cumulative, so the lines really move and junctions stay unique.
+    const sSel = clamp(U.selectedScale, 0.25, 1.6)
+    const level = float(1).sub(sSel)
+    const shapeMix = float(U.shapeOn)
+    const cellAmt = (d: any): any => U.selectedOn.mul(level).mul(exp(d.mul(d).div(-2.6)))
+    const shapeAmtAt = (k: any): any => {
+      const kf = float(k)
+      const h = fract(sin(kf.mul(27.13)).mul(43758.5453))
+      return level.mul(float(0.35).add(h.mul(0.65))).mul(0.7)
+    }
+    const amtCol = (k: any): any => mix(cellAmt(float(k).sub(floor(U.selectedCell.x))), shapeAmtAt(k), shapeMix)
+    const amtRow = (k: any): any => mix(cellAmt(float(k).sub(floor(U.selectedCell.y))), shapeAmtAt(float(k).add(7.3)), shapeMix)
+    const mapAxis = (x: any, n: any, amtAt: any): any => {
+      let sum: any = float(0)
+      for (let k = 0; k < 32; k++) sum = sum.add(amtAt(k).mul(step(float(k), n.sub(1))))
+      const mean = sum.div(n.max(1))
+      let P: any = float(0), idx: any = float(0), u: any = float(0)
+      for (let k = 0; k < 32; k++) {
+        const w = float(1).sub(amtAt(k).sub(mean)).max(0.2)
+        const inCell = step(P, x).mul(float(1).sub(step(P.add(w), x))).mul(step(float(k), n.sub(1)))
+        idx = mix(idx, float(k), inCell)
+        u = mix(u, x.sub(P).div(w), inCell)
+        P = P.add(w)
+      }
+      return idx.add(clamp(u, 0, 0.999))
+    }
+    const c = vec2(mapAxis(cu.x, U.cols, amtCol), mapAxis(cu.y, U.rows, amtRow))
     const ij = floor(c)
     const f = c.sub(ij)
     const q = f.sub(0.5)
     const self = cellAt(ij)
     const Cf = step(0.5, self.r)
+    const selected = max(step(abs(ij.x.sub(U.selectedCell.x)), 0.1).mul(step(abs(ij.y.sub(U.selectedCell.y)), 0.1)).mul(U.selectedOn), self.a.div(255))
     const half = vec2(U.cols, U.rows).mul(0.5)
-    const rectD = max(abs(c.sub(half)).sub(half).x, abs(c.sub(half)).sub(half).y).mul(cellPx)   // px, + outside
+    const rectD = max(abs(cu.sub(half)).sub(half).x, abs(cu.sub(half)).sub(half).y).mul(cellPx)   // px, + outside
     const aaPx = U.aa.mul(U.px)
     const aaC = aaPx.div(cellPx)
     const rectMask = float(1).sub(smoothstep(aaPx.negate(), aaPx, rectD))
     const emptyMask = float(1).sub(Cf).mul(rectMask)
 
-    // the glyph. Only the selected cell is evaluated in a coordinate system
-    // scaled around its own centre; every other cell keeps the original SDF.
-    const selected = step(abs(ij.x.sub(U.selectedCell.x)), 0.1).mul(step(abs(ij.y.sub(U.selectedCell.y)), 0.1)).mul(U.selectedOn)
-    const scaledC = U.selectedCell.add(c.sub(U.selectedCell).div(U.selectedScale.max(0.01)))
-    const field = sdf(mix(c, scaledC, selected))
+    const field = sdf(c)
     const d = field.x, fillet = field.y
     const inkMask = float(1).sub(smoothstep(aaC.negate(), aaC, d)).mul(rectMask)
 
