@@ -44,7 +44,7 @@ export const makeUniforms = (tex: THREE.DataTexture) => ({
   // frame
   framePadding: uniform(0.06), offset: uniform(new THREE.Vector2(0, 0)), zoom: uniform(1), aa: uniform(0.8),
   // selected-cell audio reactivity
-  selectedCell: uniform(new THREE.Vector2(-1, -1)), selectedOn: uniform(0), selectedScale: uniform(1), shapeOn: uniform(0),
+  selectedCell: uniform(new THREE.Vector2(-1, -1)), selectedOn: uniform(0), selectedScale: uniform(1), shapeOn: uniform(0), audioAmt: uniform(0), ringOn: uniform(0),
   // debug
   showField: uniform(0), showCells: uniform(0),
   // the cell grid
@@ -160,7 +160,11 @@ export const buildPicture = (U: Uniforms) => {
     // height, the sizes always sum to the grid extent (compensation built in), and the SDF gets
     // (index + u) from the cumulative, so the lines really move and junctions stay unique.
     const sSel = clamp(U.selectedScale, 0.25, 1.6)
-    const level = float(1).sub(sSel)
+    const level = clamp(U.audioAmt, 0, 1)   // audio quantity: 0 silence, 1 peak (polarity fixed)
+    // effect radius (debug + driver): distance from the selected quadrant, widened by the level
+    const dSel = vec2(cu.x.sub(floor(U.selectedCell.x).add(0.5)), cu.y.sub(floor(U.selectedCell.y).add(0.5)))
+    const radCells = float(0.9).add(level.mul(2.0))
+    const hit = U.selectedOn.mul(exp(dSel.x.mul(dSel.x).add(dSel.y.mul(dSel.y)).div(radCells.mul(radCells).negate())))
     const shapeMix = float(U.shapeOn)
     const cellAmt = (d: any): any => U.selectedOn.mul(level).mul(exp(d.mul(d).div(-2.6)))
     const shapeAmtAt = (k: any): any => {
@@ -249,6 +253,10 @@ export const buildPicture = (U: Uniforms) => {
     const border = float(1).sub(smoothstep(bw.sub(aaPx), bw.add(aaPx), abs(rectD))).mul(U.borderOn)
     const lines = max(gridLine, border).mul(U.lineOpacity).mul(mix(float(1).sub(inkMask), 1, U.gridOverInk))
     col.assign(mix(col, U.lineColor, lines))
+    // debug: heat of the effect radius + contour at half strength (toggled by showField)
+    col.assign(mix(col, vec3(1.0, 0.35, 0.12), hit.mul(U.showField).mul(0.18)))
+    const ringD = abs(hit.sub(0.5))
+    col.assign(mix(col, vec3(0.55, 0.36, 0.96), float(1).sub(smoothstep(float(0.0), float(0.05), ringD)).mul(U.ringOn).mul(hit.max(0.05))))
     // selected cell keeps a visible frame even when the audio scale is at rest
     const selEdge = float(1).sub(smoothstep(gw, gw.add(aaPx), float(0.5).sub(max(abs(q.x), abs(q.y)))))
     col.assign(mix(col, U.hoverColor, selEdge.mul(selected).mul(rectMask).mul(0.9)))

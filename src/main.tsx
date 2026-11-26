@@ -42,6 +42,8 @@ function App() {
   const [selectedCell, setSelectedCell] = useState<CellCoord | null>(null)
   const [shapeSelected, setShapeSelected] = useState(false)
   const [cells, setCells] = useState<CellCoord[]>([])
+  const [additive, setAdditive] = useState(false)
+  const [debugRing, setDebugRing] = useState(false)
   const [audioConfig, setAudioConfig] = useState<CellAudioConfig>({ ...configFromPreset('level'), enabled: false })
   const [audioDebug, setAudioDebug] = useState<CellAudioDebug | null>(null)
   useEffect(() => () => audioRef.current?.stop(), [])
@@ -57,6 +59,7 @@ function App() {
   }
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      setAdditive(e.ctrlKey || e.metaKey)
       const el = e.target as HTMLElement | null
       const typing = !!el && (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA')
       if (e.key === 'Escape') { setSelectedCell(null); setCells([]); return }
@@ -113,6 +116,7 @@ function App() {
           selectedCell={selectedCell}
           selectedCells={cells}
           shapeSelected={shapeSelected}
+          debugRing={debugRing}
           onCellSelect={(c: CellCoord | null) => {
             setShapeSelected(false)
             setSelectedCell(c)
@@ -120,7 +124,7 @@ function App() {
             setCells((prev) => {
               const i = prev.findIndex((q) => q.x === c.x && q.y === c.y)
               if (i >= 0) return prev.filter((_, k) => k !== i)
-              return [...prev, c]
+              return additive ? [...prev, c] : [c]
             })
           }}
           onAudioDebug={setAudioDebug}
@@ -131,6 +135,8 @@ function App() {
           onConfig={setAudioConfig}
           selected={selectedCell}
           debug={audioDebug}
+          debugRing={debugRing}
+          onDebugRing={setDebugRing}
         />
       </div>
       <ControlsPanel schema={schema as any} values={values} set={set} onReset={reset} />

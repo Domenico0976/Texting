@@ -191,3 +191,13 @@ Prossimi (ticket A2/A3):
 - **Transition** inspector e marker; **Empty/Loading** della timeline; **video export**.
 - **Video export** dialog: durata, fps, risoluzione, audio, loop; usa il Dialog master.
 
+
+## 10. Kinetic grid - modalita' di modulazione (feature)
+
+La modulazione delle celle e delle shape non e' un effetto decorativo: e' la modalita' con cui la griglia si anima. Contratto: `controls/Kinetic-opt.json`.
+
+- **Cella**: compressione = livello audio; raggio (quante celle toccate) = livello (oggi `1.4 + 4*level` celle); multi-selezione con Ctrl/⌘ click. I quadranti si comprimono e i vicini compensano: estensione della griglia invariata, linee dritte, giunture condivise.
+- **Shape**: stessa formula per cella, con il livello mappato in verticale (alto -> alto) e un hash per la scelta delle celle.
+- **Debug**: `showField` mostra il calore del raggio e il contorno a meta' intensita'.
+- **Audio**: la priorita' proposta e' onset -> banda -> RMS -> derivata; la taratura delle manopole e' in corso (ricerca parallela).
+- **Figma**: nessuna modifica al canvas in questa fase; il modello vive nei file logici e in `React-to-opt.json` (`Shape -> Effects`).

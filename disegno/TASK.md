@@ -4,7 +4,7 @@
 - **platform:** figma (`gmorvNrypDXH59DHWP5chr` / "Texting") · 3 pagine
 - **phase:** PHASE 6 review (G23 pending) · feature Scene/Animation in design
 - **lastSession:** 2026-11-26
-- **next:** testare kinetic grid (cella e forma) nel dev; poi A10 pannello scena dalla strip, A2 target picker, A3 ResponseCalibration
+- **next:** raggio dalla banda audio + correzione diluizione (amt/(1-mean)); poi A10 pannello scena dalla strip, A2 target picker, A3 ResponseCalibration
 
 ## Stato
 | Layer | Stato |

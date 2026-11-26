@@ -34,10 +34,11 @@ type Props = {
   selectedCell?: CellCoord | null
   selectedCells?: CellCoord[]
   shapeSelected?: boolean
+  debugRing?: boolean
   onCellSelect?: (cell: CellCoord | null) => void
   onAudioDebug?: (debug: CellAudioDebug) => void
 }
-type RenderProps = Required<Omit<Props, 'audioEngine' | 'audioConfig' | 'selectedCell' | 'selectedCells' | 'shapeSelected' | 'onCellSelect' | 'onAudioDebug'>>
+type RenderProps = Required<Omit<Props, 'audioEngine' | 'audioConfig' | 'selectedCell' | 'selectedCells' | 'shapeSelected' | 'debugRing' | 'onCellSelect' | 'onAudioDebug'>>
 const DEFAULTS: RenderProps = {
   glyph: 'reference', columns: 5, rows: 5, presetScale: true, randomDensity: 0.45, seed: 7, outside: 'empty', fillSpeed: 10,
   cornerRadius: 1, innerCorners: true, innerRadius: 1, padding: 0, breathe: 0, breatheRate: 0.25, cycle: false, cyclePeriod: 4, cycleStagger: 0.5,
@@ -246,13 +247,16 @@ export default function Quoin(raw: Props) {
         const rawSignal = audioActive ? audio.value(audioConfig.reactTo, { band: audioConfig.band, trigger: audioConfig.trigger }) : 0
         const shaped = audioActive ? shapeCellSignal(rawSignal, audioConfig, real, follower) : 0
         const probe = shapeOn ? { x: 0, y: 0 } : selected
-        const cellScale = audioActive ? resolveCellScale(probe, shapeOn || selectedFilled, audioConfig, shaped) : 1
+        const cellScale = audioActive ? resolveCellScale(probe, true, audioConfig, shaped) : 1
         if (!audioActive) follower.value = 0
         if (selected) U.selectedCell.value.set(selected.x, selected.y)
         else U.selectedCell.value.set(-1, -1)
         U.selectedOn.value = selected ? 1 : 0
         U.shapeOn.value = shapeOn ? 1 : 0
         U.selectedScale.value = cellScale
+        const amtAudio = Math.max(0, Math.min(1, (1 - cellScale) / Math.max(0.05, 1 - (raw.audioConfig?.minScale ?? 0.55))))
+        U.audioAmt.value = audioActive ? amtAudio : 0
+        U.ringOn.value = raw.debugRing ? 1 : 0
         const audioNow = performance.now()
         if (debugCb.current && audioNow - lastAudioDebug > 100) {
           lastAudioDebug = audioNow

@@ -10,6 +10,8 @@ type Props = {
   onConfig: (config: CellAudioConfig) => void
   selected: CellCoord | null
   debug: CellAudioDebug | null
+  debugRing: boolean
+  onDebugRing: (v: boolean) => void
 }
 
 const box: React.CSSProperties = {
@@ -22,7 +24,7 @@ const row: React.CSSProperties = { display: 'grid', gridTemplateColumns: '92px 1
 const input: React.CSSProperties = { width: '100%', background: '#22242b', color: '#eee', border: '1px solid #393c46', borderRadius: 6, padding: '4px 6px' }
 const button: React.CSSProperties = { background: '#2a2d35', color: '#eee', border: '1px solid #414551', borderRadius: 6, padding: '5px 8px', cursor: 'pointer' }
 
-export default function CellAudioPanel({ engine, config, onConfig, selected, debug }: Props) {
+export default function CellAudioPanel({ engine, config, onConfig, selected, debug, debugRing, onDebugRing }: Props) {
   const [open, setOpen] = useState(true)
   const [snapshot, setSnapshot] = useState(() => engine.snapshot)
   const [error, setError] = useState('')
@@ -94,6 +96,11 @@ export default function CellAudioPanel({ engine, config, onConfig, selected, deb
           <input type="checkbox" checked={config.enabled} onChange={(e) => patch({ enabled: e.target.checked })} /> Enabled
         </label>
         <button style={button} onClick={() => onConfig({ ...configFromPreset('level'), enabled: false })}>Reset</button>
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input type="checkbox" checked={debugRing} onChange={(e) => onDebugRing(e.target.checked)} /> Debug ring
+        </label>
       </div>
 
       <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid #33363f', color: canRun ? '#8ee6a5' : '#ffcc80' }}>
