@@ -1,4 +1,4 @@
-// main.tsx - the variant: props -> uniforms, the cell grid (a DataTexture the pointer paints into), the stage
+﻿// main.tsx - the variant: props -> uniforms, the cell grid (a DataTexture the pointer paints into), the stage
 // and an optional HUD (off by default: the scene is the picture alone). Breathing corners and the hover
 // tint are also off by default so a composition holds perfectly still and has no UI colour in it.
 // The picture is in src/lib/shader.ts; the glyph presets in src/lib/glyphs.ts.
@@ -9,7 +9,7 @@ import { mountStage, type Stage } from '../lib/stage'
 import { makeUniforms, buildPicture, GRID_MAX } from '../lib/shader'
 import { CYCLE, rasterGlyph } from '../lib/glyphs'
 import {
-  configFromPreset, createFollowerState, resolveCellScale, shapeCellSignal,
+  amountFromForce, amountFromSize, applyCurve, autoGain, configFromPreset, createFollowerState, createGainState, glide, globalOf, mixChannels, radiusCells, rateFromSpeed, responseTau, shapeCellSignal, sizeFromSignal,
   type AudioEngine, type CellAudioConfig, type CellAudioDebug, type CellCoord,
 } from '../lib/audio'
 
@@ -107,6 +107,13 @@ export default function Quoin(raw: Props) {
     let tone = '', statAt = 0, dragAction = -1, lastCx = NaN, lastCy = NaN, eraseMod = false
     let clock = 0
     const follower = createFollowerState()
+    const glideAmt = { value: 0 }
+    const gainState = createGainState()
+    // Pulse runs two channels: the attack envelope and the band's sustain, each with its own clamp, so
+    // the hits cannot take the whole range away from the sustained part (and vice versa).
+    const gainAttack = createGainState()
+    const gainSustain = createGainState()
+    let roamPhase = 0, shapePhase = 0
     let lastAudioDebug = 0
 
     // write a preset (row 0 at the top) into the pending or the target grid, centred, scaled
@@ -243,36 +250,80 @@ export default function Quoin(raw: Props) {
         const shapeOn = !!raw.shapeSelected
         const selectedFilled = !!selected && selected.x >= 0 && selected.y >= 0 && selected.x < cols && selected.y < rows && fill[idx(selected.x, selected.y)] > 0.5
         const audioActive = !!audio?.ready && audioConfig.enabled && (shapeOn || !!selected)
-        if (audio) audio.update(performance.now())
-        const rawSignal = audioActive ? audio.value(audioConfig.reactTo, { band: audioConfig.band, trigger: audioConfig.trigger }) : 0
-        const shapedRaw = audioActive ? shapeCellSignal(rawSignal, audioConfig, real, follower) : 0
+        const playing = !!audio?.isPlaying
+        if (audio) audio.update(performance.now())        // paused means no signal, not a frozen one: BPM and Snap & Hold keep their last value when
+        // the transport stops, and that value would hold the grid deformed.
+        const rawSignal = audioActive && playing && audio ? audio.value(audioConfig.reactTo, { band: audioConfig.band, trigger: audioConfig.trigger, stem: audioConfig.stem }) : 0
+        // Pulse: two sources, two clamps. Each channel is normalised on its own window, then mixed, so a
+        // band that sits at 0.6 while the hits are at 1.0 still moves instead of being flattened by the
+        // hit's range. The blend is already 0..1, so the single-channel auto-gain must not run again.
+        const twoCh = audioConfig.channels
+        let source = rawSignal
+        if (twoCh && audio && audioActive && playing) {
+          const attack = audio.value('pulse-attack')
+          const sustain = audio.value('pulse-sustain')
+          const on = audioConfig.autoGain !== false
+          const aN = on ? autoGain(gainAttack, applyCurve(attack, audioConfig.curve), real) : attack
+          const sN = on ? autoGain(gainSustain, applyCurve(sustain, audioConfig.curve), real) : sustain
+          source = mixChannels(aN, sN, twoCh)
+        }
+        const shapedRaw = audioActive ? shapeCellSignal(source, audioConfig, real, follower) : 0
         const wv = audioConfig.wave ?? 'sine'
-        let shaped = wv === 'saw' ? shapedRaw : wv === 'triangle' ? 1 - Math.abs(2 * shapedRaw - 1) : wv === 'quad' ? (shapedRaw < 0.5 ? 0 : 1) : shapedRaw
-        const thr = Math.max(0, Math.min(0.95, audioConfig.threshold))
-        shaped = Math.max(0, Math.min(1, (shaped - thr) / Math.max(0.01, 1 - thr)))
-        const stp = Math.round(audioConfig.steps)
-        if (stp > 0) shaped = Math.round(shaped * stp) / stp
-        const probe = shapeOn ? { x: 0, y: 0 } : selected
-        const cellScale = audioActive ? resolveCellScale(probe, true, audioConfig, shaped) : 1
+        // Threshold and steps live in shapeCellSignal, once. Applying the threshold again here squared
+        // the gate — a 0.30 signal with threshold 0.15 came out at 0.12 instead of 0.25 — and the second
+        // `steps` re-quantised onto 1/8 a value already quantised onto 1/7.
+        const shaped = wv === 'saw' ? shapedRaw : wv === 'triangle' ? 1 - Math.abs(2 * shapedRaw - 1) : wv === 'quad' ? (shapedRaw < 0.5 ? 0 : 1) : shapedRaw
+        // Signed range wins over any ceiling: 1 is the reference size, so the far end of the range
+        // sets both the depth (normalised to full force) and the direction (end < 1 shrinks).
+        const curve = applyCurve(shaped, audioConfig.curve)
+        // the track's own range becomes the input range: a flat band still moves 0..1, a constant
+        // signal stays at 0 instead of faking motion
+        const controlled = audioConfig.autoGain === false ? curve : autoGain(gainState, curve, real)
+        const range: [number, number] = audioConfig.range ?? [1, audioConfig.minScale]
+        const size = sizeFromSignal(controlled, range)
+        const force = Math.max(0, Math.min(1, audioConfig.force ?? audioConfig.sensitivity / 100))
+        const glob = globalOf(audioConfig)
+        const amount = audioActive ? amountFromSize(size, range[0]) : 0
+        // global power layer: eased force x depth ceiling, then the final glide. Without it a
+        // control at 1 multiplied the raw signal and the grid snapped instead of modulating.
+        const goalAmt = audioActive ? amountFromForce(amount, force, glob.depth) : 0
+        // Response smooths the signal; a pause (or losing the target) uses a longer return so the
+        // grid settles instead of snapping back at the envelope's release speed.
+        const glideTau = audioActive && playing ? responseTau(glob.response) : Math.max(0.35, responseTau(glob.response))
+        glideAmt.value = glide(glideAmt.value, goalAmt, Math.min(real, 1 / 30), glideTau)
+        const signed = Math.max(-1, Math.min(1, glideAmt.value))
+        const cellScale = audioActive ? size : 1
         if (!audioActive) follower.value = 0
         if (selected) U.selectedCell.value.set(selected.x, selected.y)
         else U.selectedCell.value.set(-1, -1)
         U.selectedOn.value = selected ? 1 : 0
         U.shapeOn.value = shapeOn ? 1 : 0
         U.selectedScale.value = cellScale
-        const cfgs = raw.audioConfig ?? DEFAULT_AUDIO
-        const sens = Math.max(0, Math.min(1, cfgs.sensitivity / 100))
-        const amtAudio = Math.max(0, Math.min(1, (cellScale - cfgs.minScale) / Math.max(0.05, cfgs.maxScale - cfgs.minScale)))
-        U.audioAmt.value = audioActive ? amtAudio * sens : 0
+        U.audioAmt.value = signed
         U.ringOn.value = raw.debugRing ? 1 : 0
-        U.shapeAmt.value = audioActive && shapeOn ? Math.max(0, Math.min(1, shaped)) * sens : 0
-        U.bandAmt.value = audioActive ? Math.max(0, Math.min(1, audio!.value('low-freq'))) * sens : 0
-        U.roamSeed.value = raw.audioConfig?.roamSeed ?? 0
-        U.roamSpeed.value = 1 + 0.9 * U.bandAmt.value * (raw.audioConfig?.roamBand ?? 0.5)
+        // the shape reads the same amount with its own spatial analysis (noisy-OR in the shader)
+        const shapeAmt = audioActive && shapeOn ? Math.abs(signed) : 0
+        const bandLevel = audioActive && playing ? Math.max(0, Math.min(1, audio!.value('low-freq'))) : 0
+        const bandAmt = bandLevel * force
+        U.shapeAmt.value = shapeAmt
+        U.bandAmt.value = bandAmt
+        // the radius is computed here so the cap lives in one place (radiusCells)
+        U.radiusCells.value = audioActive ? radiusCells(signed, bandLevel, glob.scatter) : radiusCells(0, 0, glob.scatter)
+        // per-cell scatter: the shader needs the amount too, the radius alone cannot break the bell
+        U.scatter.value = glob.scatter
+        U.roamSeed.value = audioConfig.roamSeed ?? 0
+        // phase integration: the rate is a multiplier of dt, never of absolute time
+        const roamRate = (audioConfig.roamSpeed ?? 1) * rateFromSpeed(glob.speed) * (1 + 0.55 * bandAmt * (audioConfig.roamBand ?? 0.5))
+        U.roamPhase.value = roamPhase
+        U.shapePhase.value = shapePhase
+        if (!still) {
+          roamPhase += real * p.speed * 0.8 * roamRate
+          shapePhase += real * p.speed * 0.55
+        }
         const audioNow = performance.now()
         if (debugCb.current && audioNow - lastAudioDebug > 100) {
           lastAudioDebug = audioNow
-          debugCb.current({ selected, filled: shapeOn || selectedFilled, raw: rawSignal, shaped, scale: cellScale, enabled: audioActive, reaction: audioConfig.reactTo, engineReady: !!audio?.ready, configEnabled: audioConfig.enabled, hasSelection: shapeOn || !!selected, engineId: audio?.id ?? '' })
+          debugCb.current({ selected, filled: shapeOn || selectedFilled, raw: rawSignal, shaped: controlled, scale: cellScale, amount: signed, band: bandLevel, size, curve, gainRange: Math.max(0, gainState.hi - gainState.lo), enabled: audioActive, reaction: audioConfig.reactTo, engineReady: !!audio?.ready, configEnabled: audioConfig.enabled, hasSelection: shapeOn || !!selected, engineId: audio?.id ?? '' })
         }
 
         // corners: radius in cell units (half a cell at 1), breathing on a cosine
@@ -351,3 +402,4 @@ export default function Quoin(raw: Props) {
     </div>
   )
 }
+

@@ -12,6 +12,8 @@ type Props = {
   debug: CellAudioDebug | null
   debugRing: boolean
   onDebugRing: (v: boolean) => void
+  /** reports decode / context failures to the dev bench */
+  onError?: (msg: string) => void
 }
 
 const box: React.CSSProperties = {
@@ -25,7 +27,7 @@ const input: React.CSSProperties = { width: '100%', background: '#22242b', color
 const sect: React.CSSProperties = { marginTop: 10, marginBottom: 2, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase', color: '#8b8f9a' }
 const button: React.CSSProperties = { background: '#2a2d35', color: '#eee', border: '1px solid #414551', borderRadius: 6, padding: '5px 8px', cursor: 'pointer' }
 
-export default function CellAudioPanel({ engine, config, onConfig, selected, debug, debugRing, onDebugRing }: Props) {
+export default function CellAudioPanel({ engine, config, onConfig, selected, debug, debugRing, onDebugRing, onError }: Props) {
   const [open, setOpen] = useState(true)
   const [snapshot, setSnapshot] = useState(() => engine.snapshot)
   const [error, setError] = useState('')
@@ -39,12 +41,15 @@ export default function CellAudioPanel({ engine, config, onConfig, selected, deb
   const load = async (file?: File) => {
     if (!file) return
     setError('')
+    onError?.('')
     try {
       await engine.loadFile(file)
       engine.play()
       setSnapshot(engine.snapshot)
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      const msg = e instanceof Error ? e.message : String(e)
+      setError(msg)
+      onError?.(msg)
     }
   }
 
@@ -95,8 +100,8 @@ export default function CellAudioPanel({ engine, config, onConfig, selected, deb
       </div>
       <div style={sect}>IMPACT · sensitivity, min/max scale</div>
       <Slider label="Sensitivity" value={config.sensitivity} min={0} max={100} step={1} onChange={(v) => patch({ sensitivity: v })} />
-      <Slider label="Min scale" value={config.minScale} min={0.1} max={1} step={0.01} onChange={(v) => patch({ minScale: Math.min(v, config.maxScale) })} />
-      <Slider label="Max scale" value={config.maxScale} min={0.1} max={1} step={0.01} onChange={(v) => patch({ maxScale: Math.max(v, config.minScale) })} />
+      <Slider label="Min scale" value={config.minScale} min={0.1} max={1} step={0.01} onChange={(v) => { const m = Math.min(v, config.maxScale); patch({ minScale: m, range: [m, config.range?.[1] ?? config.maxScale] }) }} />
+      <Slider label="Max scale" value={config.maxScale} min={0.1} max={1} step={0.01} onChange={(v) => { const m = Math.max(v, config.minScale); patch({ maxScale: m, range: [config.range?.[0] ?? config.minScale, m] }) }} />
       <div style={sect}>RESPONSE · wave + steps</div>
       <Slider label="Steps (0 = off)" value={config.steps} min={0} max={32} step={1} onChange={(v) => patch({ steps: v })} />
       <div style={sect}>GATE · threshold, attack, release</div>

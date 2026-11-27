@@ -7,7 +7,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "node --test src/lib/audio.test.ts"
+    "test": "node --test src/lib/audio.test.ts src/lib/preset-copy.test.ts"
   },
   "dependencies": {
     "three": "^0.186.0"

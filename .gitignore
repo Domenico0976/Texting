@@ -1,4 +1,4 @@
 #folder
-disegno/
-.omo/
+disegno/*
+.omo/*
 node_modules/*

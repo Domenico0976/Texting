@@ -49,3 +49,35 @@ Regole che valgono su ogni schermata: shell, stati, feedback, tastiera, accessib
 - Transienti: spinner solo per operazioni > 400 ms.
 - Successo: toast 3 s, non bloccante. Errore: toast con azione "Retry".
 - Navigazione: rail conserva lo stato del progetto aperto; tornare da Library riapre l'ultimo editor.
+
+## 9. Pannelli fluttuanti e footer sticky
+
+**Footer sticky.** Il pannello reactivity è una colonna: header fisso, corpo che scorre, footer
+**fuori dallo scroll**. Se il pannello non entra nella pagina, il corpo scorre e il footer resta
+ancorato al bordo inferiore del pannello (44 px, invariato). Mai dentro il contenitore scrollabile:
+un footer che scorre via lascia l'utente senza "enabled" e "reset".
+
+- Struttura: `header → divider → Content (scroll) → footer` come fratelli, non annidati.
+- Il corpo scrollabile ha il fade di 12 px sul bordo inferiore quando c'è contenuto oltre.
+- Con pannello ridimensionato, il footer resta a 44 px: si accorcia il corpo, non il footer.
+
+**Pannelli fluttuanti: resizable, non agganciabili.**
+
+| Regola | Valore |
+|---|---|
+| Ridimensionamento | maniglia all'angolo in basso a destra + sui bordi; min 320×360, max = viewport − 24 |
+| Snap ai bordi | **vietato**: nessuna zona di aggancio, nessun auto-dock, nessun magnete |
+| Posizione | libera nel canvas; il pannello ricorda l'ultima posizione per progetto |
+| Ordine di sovrapposizione | **la timeline sta sopra i pannelli** per default |
+| Click su un pannello | il pannello **sale sopra la timeline** e diventa interagibile; la timeline resta visibile ai bordi |
+| Click sul canvas o su un altro pannello | il pannello torna sotto la timeline |
+| Trascinamento | il pannello in drag sale sopra tutto, e resta sopra a fine drag |
+
+- La timeline non si sposta: cambia solo lo z-index. Nessun "collasso" automatico della timeline.
+- Un solo pannello "sopra" alla volta: alzare il secondo abbassa il primo (una pila, non un mucchio).
+- Il pannello sopra riceve focus tastiera; Esc non lo chiude (chiude solo i popover interni).
+- Il resize non deve mai coprire il footer: il corpo si accorcia, il footer resta.
+
+**Perché.** La timeline è il contesto (tempo, tracce) e deve restare leggibile; il pannello è lo
+strumento che si sta usando. Portare lo strumento davanti al contesto solo quando lo si tocca evita che
+il contesto scompaia del tutto (il difetto delle dock che coprono il lavoro).

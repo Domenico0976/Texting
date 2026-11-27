@@ -1,7 +1,7 @@
 # CANVAS-MAP — Fragment / Shape Editor UI
 
 - **File:** Figma "Texting" · `gmorvNrypDXH59DHWP5chr`
-- **dsVersion:** 0.14.0
+- **dsVersion:** 0.22.0
 - **Tokens:** `ds/palette` (30) · `ds/semantic` Dark (29) · `ds/semantic-light` Light (29) · `ds/scale` (44 float)
 - **Text styles:** Type/Heading · Title · Subtitle · Body · Label · Value · Mono · Caption (Inter)
 - **Effect styles:** Elevation/popover · Elevation/dialog
@@ -64,6 +64,24 @@
 | Molecule/AxisTicks | Kind = Single/Dual × Theme | muted-foreground + input | 276 wide; Single 3 stop 11; Dual = 2 colonne con titolo 12 + traccia 4 | 4 | Reactivity panel |
 | Molecule/SliderCompact | State = Rest/Drag × Theme | input + selection | 140×16, traccia 2, pomello 20×14 r 7 | 4 | Reactivity panel |
 | Molecule/RangeSlider | State = Rest/Drag × Theme | muted-foreground + selection | 276×56, 2 maniglie con punta, valori sotto | 4 | Reactivity panel |
+| Molecule/ReactivityGlobalMenu | Theme 2 | popover + border | 264×279, p 12, r 10: 4 righe Menu + nota + divider + live | 2 | aperto da `Reactivity calibration` |
+| Molecule/ReactivityParamRow | Width = Panel/Menu × Stop 0–4 × Theme | background + border, selection fill | 320/240×20: label 64/60 + slider 196/128 + chip 44/36 | 20 | card, menu |
+| Molecule/ReactivityBadge | Theme 2 | border + muted-foreground | h 16, p 5, r 4, 9 caps | 2 | head delle card |
+| Molecule/ReactivityTravel | Theme 2 | border track + selection span | 320×18, span 0.54–0.70, handle 6 | 2 | card Range |
+| Molecule/ReactivityCurve | Active = linear/exp/spring × Theme | accent + selection underline | 320×25, 3 segmenti 102 | 6 | card Pulse |
+| Molecule/ReactivityPresetRow | State = Rest/Active × Theme | accent + selection bar | 168×28, p 12, name 12 + check 11 | 4 | rail del pannello |
+| Organism/ReactivityHeader | State = Calm/Open × Theme | background + border | 560×48: breadcrumb + calibration 24 + close 20 | 4 | pannello |
+| Molecule/ReactivityFooter | Theme 2 | selection checkbox | 560×44: check 14 + enabled + reset | 2 | pannello |
+| Molecule/ReactivityLiveRow | Theme 2 | muted-foreground + foreground | 240×16: amount + radius | 2 | menu globale |
+| Molecule/ReactivityCard | Content 14 · Theme | muted + border badge | 344 wide, p 0, r 8: Block/Head (12) + plot full-bleed + Block/Body (12, righe + nota) | 28 · griglia 2 colonne per tema, 0 overlap | pannello |
+| Molecule/ParamPlot | Kind = CurveLinear/CurveExp/CurveSpring/Transfer/Step/Band/Grid · Theme | solo inchiostro: selection (serie 1.5, area 14%) + border hairline | 344x72, **senza fill né bordo né radius**: la superficie è della card, il plot disegna solo la funzione; 7 kind in griglia 2 colonne | 14 | card con anteprima (T20) |
+| Molecule/ParamSpec | Section = Band/Response/Range/Force/Pulse/Snap/Bands/Global · Theme | popover + border + Elevation/popover | 264 wide, p 12, r 10: titolo 12 + corpo 10/15 + divider + «not wired» 10 | 16 | tooltip di sezione (hover sull'info) |
+| Molecule/ResizeHandle | Edge = Corner · Theme | muted-foreground | 24×24 (hit), glifo 3 tacche 12 | 2 | pannelli fluttuanti |
+| Row/Molecule/ReactivityComposed | - | - | 2239x12962: card set + menu + 40 varianti pannello | 1 | composizione master |
+| Organism/ReactivityPanel | Theme × Menu × Preset 10 | background + muted + accent | 560×658–923: header + rail 168 + 4/5 card + footer + menu | 40 · griglia 2 colonne per tema, 0 overlap | pannello reactivity |
+| Organism/EffectPanel | Theme 2 | background + muted | 376×458: header Effect/Noise + card Effect + card Link + footer | 2 | target `kind: effect` |
+| Molecule/ReactivityNotice | State = NoAudio/Error × Theme | muted + destructive | 560×54: dot 6 + titolo 12 + caption 11 + azione 11 | 4 | stati del pannello |
+| Organism/ReactivityState | State = NoAudio/Error × Theme | background + destructive | 560×814: header + notice + corpo 35% + footer | 4 | stati del pannello |
 | Icon/info | Size = 16/20 × Theme | foreground | cerchio + punto + barra | 4 | SectionCard, tooltip |
 | Organism/NavRailItem | State 3 | accent/selection | 40×40, radius 8, icon 20 | default, hover, active | rail |
 | Organism/NavItem | State 3 | accent | h 30, radius 6, icon 16 | default, hover, active | sidebar |
@@ -71,7 +89,7 @@
 | Organism/ContextMenuItem | State 3 | accent, destructive | h 26, radius 4, shortcut Mono 10 | default, hover, destructive | menu |
 | Organism/PanelHeader | State 2 | border hairline | h 36, px 12 | expanded, collapsed | sidebar/inspector |
 | Organism/ContextMenu | Context = Cell/Layer | popover + border + shadow | 180 wide, radius 8, padding 4, item 26 | — | overlay ancorato |
-| Organism/Toolbar | State = Collapsed/Expanded × Theme | popover + border + selection | 48×48 / 48×236, verticale, top-left | collapsed, expanded | canvas (absolute) |
+| Organism/Toolbar | State = Collapsed/Expanded × Theme | popover + border + selection | 48×48 / 48×238, verticale, padding 8/8 espanso, top-left | collapsed, expanded | canvas (absolute) |
 | Organism/InspectorRail | Active = Tool/Look/Grid/Motion/Export × Theme | card + border + accent/selection | 48×236, box a destra Inspector | 5 active | Inspector |
 | Organism/GlyphGrid | Glyph = Reference/Heart/Arrow/Smiley/A/S/Clear/Random A/Random B | contenuto: paper #E8E5E8, ink #202020, line #2C2C2C | 400×400, 5×5, celle 70 | 9 stati | canvas, card |
 | Organism/ProjectCard | State 2 | card + border/input, thumb = paper progetto | 260 base, radius 10, interni FILL | default, hover, focus | library grid |

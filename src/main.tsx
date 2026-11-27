@@ -7,6 +7,7 @@ import Variant1 from './components/dense-riso.tsx'
 import Variant2 from './components/midnight-minimal.tsx'
 import { ControlsPanel, useControls } from './controls-ui'
 import CellAudioPanel from './components/cell-audio-panel'
+import ReactivityDevPanel from './components/reactivity-dev-panel'
 import { AudioEngine, configFromPreset, type CellAudioConfig, type CellAudioDebug, type CellCoord } from './lib/audio'
 import rawSchema from '../controls/main.json'
 const schema = (rawSchema as any).story
@@ -51,7 +52,8 @@ function App() {
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
   }, [])
-  const [audioConfig, setAudioConfig] = useState<CellAudioConfig>({ ...configFromPreset('level'), enabled: false })
+  const [audioConfig, setAudioConfig] = useState<CellAudioConfig>({ ...configFromPreset('bass'), enabled: false, devPreset: 'Bass', range: [1, 0.55], force: 0.75 })
+  const [audioError, setAudioError] = useState('')
   const [audioDebug, setAudioDebug] = useState<CellAudioDebug | null>(null)
   useEffect(() => () => audioRef.current?.stop(), [])
 
@@ -143,6 +145,17 @@ function App() {
           debug={audioDebug}
           debugRing={debugRing}
           onDebugRing={setDebugRing}
+          onError={setAudioError}
+        />
+        <ReactivityDevPanel
+          engine={audioRef.current}
+          config={audioConfig}
+          onConfig={setAudioConfig}
+          selected={selectedCell}
+          shapeSelected={shapeSelected}
+          onShapeSelected={setShapeSelected}
+          debug={audioDebug}
+          error={audioError}
         />
       </div>
       <ControlsPanel schema={schema as any} values={values} set={set} onReset={reset} />

@@ -2,6 +2,176 @@
 
 ## Change history
 
+### 0.22.0 — 2026-11-27 — Info tool, spec per sezione, maniglia di resize
+
+**C4 — `Molecule/ParamSpec`** (16: 8 sezioni × Theme). Pannello flottante 264, r 10, fill `popover`,
+stroke `border`, `Elevation/popover`, pad 12, gap 8: titolo 12 Medium, corpo 10/15 `muted-foreground`,
+divider, riga "non cablato" a 10 @85%. Ogni pannello spiega **la sezione**, non il singolo slider:
+cosa ascolta, cosa fanno i controlli, cosa non è collegato.
+Sezioni: Band, Response, Range, Force, Pulse, Snap, Bands, Global.
+
+**C4 — `Molecule/ResizeHandle`** (2: Theme). 24×24 di hit, glifo 3 tacche 12 in `muted-foreground`.
+Usato dai pannelli fluttuanti: `Organism/EffectPanel` lo ha in basso a destra (absolute, inset 6).
+
+**C2 — info tool nelle card.** `Icon/info` (Size 16) accanto al titolo in 7 Content (Band, Bands,
+Response, Range, Force, Curve, Snap) × 2 temi. Hover → `Molecule/ParamSpec` della sezione, affiancato
+al bordo destro della card, 8 di distanza. La nota in fondo alla card resta **solo** la descrizione di
+quello che il parametro fa; l'informazione "cos'è questa sezione" vive nel pannello di spec.
+
+**Composizione.** `Row/Molecule/ReactivitySpec`: card Pulse con spec aperto + pannello flottante
+d'esempio con la maniglia. Non è una schermata: è il riferimento per il comportamento di hover e resize,
+perché in Figma lo stato hover non è una variante della card (sarebbero 56 varianti per niente).
+
+**Gate.** G4: paint legati a variabili, nessun letterale. G12: spec in auto-layout; la maniglia è
+absolute per definizione (eccezione ammessa: decorazione ancorata). G17: `Icon/info` da Foundations,
+istanza senza override. G16: C2/C4 registrate, `dsVersion` 0.22.0.
+
+
+### 0.21.0 — 2026-11-27 — Preview dentro la card, auto-gain nel pannello, LAB chiuso
+
+**C2 — preview omogenea.** `Molecule/ParamPlot` è **bare**: niente fill, niente stroke, niente radius
+(la superficie è della card). Larghezza 344, interni rigenerati (griglia 328, path fino a 336).
+`Content=Curve`, `Content=Response`, `Content=Band`, `Content=Snap` (Dark+Light) ricomposte:
+`Block/Head` (pad 12/12/0/12) → **plot full-bleed** → `Block/Body` (pad 4/12/11/12); card a pad 0,
+`clipsContent` true, radius 8. Altezze: Curve 233, Response 224, Snap 199, Band 187.
+Nessuna card dentro la card: la curva tocca i bordi e il contenuto è una sola stratificazione.
+
+**C2 — auto gain nel prodotto.** `Molecule/ReactivityGlobalMenu` (Dark+Light): riga `Row/AutoGain` con
+`Molecule/Switch State=On` + "auto gain · adapts to the track (2.5 s)", sopra il divider; menu 264×233 → **279**.
+
+**C4 - griglia delle varianti.** Sovrapposizioni trovate e azzerate:
+- `Molecule/ParamPlot`: 7 kind × 2 temi su due colonne (Dark | Light), passo 372 / 92 → **0 overlap**.
+- `Molecule/ReactivityCard`: 28 varianti, prima **8 sovrapposte** → due colonne per tema, ordine Content della rail → **0**.
+- `Organism/ReactivityPanel`: 40 varianti, prima **34 sovrapposte** → due colonne per tema, ordine Preset × Menu → **0**.
+Le istanze non si rompono: spostare le varianti cambia solo la posizione nel set.
+
+**Rimosso.** `Section/Reactivity-Plots-LAB`: promosso nei componenti reali, poi cancellato (nessun residuo
+sulla pagina 02).
+
+**Comportamenti registrati** (`LOGIC-PAGES/00-global` §9). Footer **sticky** fuori dallo scroll (44 px,
+il corpo si accorcia); pannelli fluttuanti **resizable** con minimo 320×360, **nessuno snap ai bordi**,
+timeline **sopra** i pannelli per default, click sul pannello → sale sopra la timeline, un solo pannello
+sopra alla volta, il drag lo tiene sopra a fine gesto.
+
+**Gate.** G4: paint legati a variabili. G12: card/body/head in auto-layout; il plot dichiara layout NONE
+(eccezione grafici). G14: nessuna sezione orfana. G16: C1/C2/C4 registrate. Marca `dsVersion` 0.21.0.
+
+
+### 0.20.0 — 2026-11-27 — Card con anteprima: `Molecule/ParamPlot` + card Pulse
+
+## C4 — nuovo componente
+
+- **`Molecule/ParamPlot`** — 14 varianti: `Kind = CurveLinear | CurveExp | CurveSpring | Transfer | Step | Band | Grid`
+  × `Theme = Dark | Light`. 320×72, r 6, fill `input`, stroke `border`, 2 hairline `border` @55%,
+  serie `selection` 1.5, area `selection` @14%, celle della griglia a 5 opacità.
+  Nessun token nuovo (C0 sui colori): tutti i paint sono legati alle variabili esistenti di
+  `ds/semantic` (Dark) e `ds/semantic-light` (Light).
+- **`Section/Reactivity-Plots-LAB`** (`Lab/Status: STUDY`, pagina 02, figlio di `List`): intestazione +
+  `Row/Studies` (Response transfer, Band spectrum, Snap step) + `Row/Panels` (i due pannelli reali
+  `Preset=Pulse`, Dark e Light) + `Row/Global` (glide exp, griglia scatter 5×5, riga auto-gain
+  proposta `PROP`). Nessuna istanza nelle schermate finché non promosso.
+
+## C2 — estensioni
+
+- **`Molecule/ReactivityCard` → `Content=Curve`** (Dark + Light): la card Pulse ora contiene
+  `ParamPlot Kind=CurveExp` + `Molecule/ReactivityCurve` + **`ReactivityParamRow` Attack 1.00** +
+  **`ReactivityParamRow` Sustain 0.70** + nota nuova. Altezza 106 → **245**.
+  Il plot disegna `applyCurve` (exp), cioè la funzione che il motore esegue davvero.
+- **`Organism/ReactivityPanel` `Preset=Pulse`** (4 varianti): seguono l'estensione della card;
+  altezza +139 per variante (il Content è a hug, quindi il pannello cresce da sé).
+
+## C1 — correzioni allineate al motore (T11–T18)
+
+| Dove | Prima | Ora |
+|---|---|---|
+| Pulse ×4, nota Band | "The kick body drives it: lo/hi are idle." | "…; the band level is the floor, so sustained parts still move." |
+| Pulse ×4, Response | 0.15 / 35 ms / 212 ms | **0.05 / 5 ms / 180 ms** |
+| Pulse ×4, nota Pulse | "Curve is live: it eases the value before Range…" | "Two channels, one clamp each: the hit and the band sustain both move. Curve is live." |
+| Snap ×4, Hold | 160 ms | **250 ms** |
+| Snap ×4, nota | "The signal is held, not followed…" | "The signal is held for 0.25 s after the trigger, then released…" |
+| Global menu ×2, Glide | 0.50 | **0.20** |
+| Global menu ×2, nota | "…Scatter caps the radius…" | "Depth caps the amount; Scatter caps the radius and the per-cell grain; Speed 0.3x-1.6x; Glide smooths the return." |
+
+## Decisioni registrate
+
+- **Nessun knob rotativo.** "Knob" nel DS è il pomello dello slider (`knobInsideFrame`, 0.17.2). I
+  parametri restano slider + chip; la manipolazione diretta, se servirà, passa dalle maniglie sul plot.
+- **Auto-gain**: nel banco esiste (default ON, finestra 2.5 s), nel pannello è mostrato solo come
+  **proposta** nella card Global del LAB (`PROP`). Promozione rinviata.
+- **`Content=Curve` tiene il nome**: la card è la sezione Pulse e la curva è la sua lettura, non un
+  contenitore generico.
+
+## Gate
+
+- G4: paint tutti legati a variabili (nessun letterale) — 0 violazioni sui nodi nuovi.
+- G12: card e pannello in auto-layout; row/boards in auto-layout. Il plot è un disegno (layout NONE
+  dichiarato, eccezione ammessa per i grafici).
+- G17: nessuna icona coinvolta.
+- G13/G18/G20: `HARNESS.md` invariato; nessun catalogo usato; Ritroso invariato.
+- Controllo residuo: la scala dei valori nel plot non è etichettata (nessun asse numerico) — intenzionale,
+  la card mostra il *gesto*, non i numeri; i numeri sono nei chip delle righe.
+
+## Prossimi
+
+1. Screenshot Dark/Light delle 4 varianti Pulse già presi; manca la revisione dell'utente.
+2. Se approvato: promozione (spostare `ParamPlot` fuori dal LAB, `Content=Curve` → `Content=Pulse`,
+   mappa + changelog C4), poi le card Response/Band/Snap con lo stesso plot.
+
+### 0.19.0 - 2026-11-27 - Copy dei preset, fonte unica
+
+- **`src/lib/preset-copy.ts`**: `PRESET_COPY` con i 10 preset; per ognuno `verb`, `badge`, `bandNote`, `hide[]`, `replace`, `kind`, `extra { title, badge, params, note }`, `wired`, `note`. `coreFor(id)` restituisce il core nell'ordine fisso dopo le nascoste.
+- **Test** `preset-copy.test.ts` (7): 10 id unici, core mai senza Range/Force e mai riordinato, verbi coerenti col piano (core = niente extra, add = una extra, replace = target core, hide = sezione), `replace` e `hide` mai sullo stesso slot, banda nascosta senza nota, `presetCopy` con fallback, lista dei non cablati fissata. `npm test` ora esegue entrambi i file: **24 test**.
+- **Dev**: `PRESETS` derivato da `PRESET_COPY`; `Band` si spegne con badge `HIDDEN` se il preset la nasconde, `Response` con `HIDDEN` (Automation) o `REPLACED` (MIDI/BPM/Snap); note dei preset dalla tabella (via i testi duplicati).
+- **Figma**: note delle 28 card allineate alla tabella; nei 40 pannelli la nota della banda e' sovrascritta per preset (dB, Pulse, Bass, Spectral, MIDI, BPM, Snap, Harmony). Verificato a runtime: Automation `HIDDEN` + "No band for this preset…", MIDI `REPLACED` + "Whole-track fallback…".
+- **React To**: non toccato per scelta; registrato in `HANDOFF.md` §1.
+
+### 0.18.2 - 2026-11-27 - Stati reactivity validati a runtime
+
+- **`reactivity-dev-panel.tsx`**: tre stati come nel Figma. `NoAudio` quando `engine.ready` e' falso, `Error` quando il caricamento fallisce, `Live` altrimenti. Banner full-bleed sotto l'header (dot 6, titolo 12, caption 11, azione a destra; barra `destructive` a 2px nel solo Error), corpo a `opacity .35` + `pointer-events: none`, footer attivo. Il banner ha il suo input file: `Load audio` e `Retry` aprono il picker e puliscono l'errore.
+- **Propagazione errori:** `CellAudioPanel` accetta `onError` e lo chiama in `load` (stringa vuota al successo); `src/main.tsx` tiene `audioError` e lo passa al bench, cosi' i due pannelli raccontano lo stesso stato.
+- **Verifica (CDP, screenshot `state-noaudio.png`, `state-error.png`, `state-live.png`):** senza file banner `No audio source` + corpo spento; con un `.wav` non decodificabile `Audio could not start` / `Could not decode audio` / `Retry`; dopo `Retry` + file valido il banner sparisce e i controlli tornano attivi. Typecheck, 17 test e build verdi.
+
+### 0.18.1 - 2026-11-27 - Stati del pannello reactivity
+
+- **`Molecule/ReactivityNotice`** (4: `State=NoAudio|Error` x Theme, 560x54): banner full-bleed sotto l'header. `NoAudio`: dot `muted-foreground`, titolo "No audio source", caption "Load a file to react to it.", azione "Load audio". `Error`: barra 2px `destructive` a sinistra, dot e azione `destructive`, titolo "Audio could not start", caption "Decode failed or the output is blocked.", azione "Retry".
+- **`Organism/ReactivityState`** (4: `State=NoAudio|Error` x Theme, 560x814): pannello completo con header, banner, divider, corpo (rail + 5 card) a `opacity 0.35`, footer. Preset fisso Pulse, menu chiuso.
+- **Perche' un set separato:** aggiungere un quarto asse (`State`) a `Organism/ReactivityPanel` corrompe il set ("Component set has existing errors" su `variantGroupProperties`); rimosso il figlio, il set torna sano (40 varianti, assi Theme/Menu/Preset). Figma non accetta varianti sparse con proprieta' in piu'. Quindi: pannello = 40 varianti normali, stati = set dedicato con gli stessi atomi.
+- **Dove:** `ReactivityNotice` in `Row/Molecule/ReactivityControls`, `ReactivityState` in `Row/Molecule/ReactivityComposed`.
+
+### 0.18.0 - 2026-11-27 - `Organism/EffectPanel` (Noise) + toolbar allineata
+
+- **`Organism/EffectPanel`** (2 varianti Theme, 376x458): target `kind: effect`. Header `Effect / Noise` + badge `LINKED` + close, card `Effect` (Source Noise, Seed 8, Scale 1.2, Warp 0.30) e card `Link` (From Pulse, Target Scale, Depth 0.60), footer `enabled/reset`. Sta accanto al pannello reactivity: stessa struttura, larghezza 376 per due card da 344.
+- **`Organism/EffectHeader`** (2 varianti, 376x48): breadcrumb + `LINKED` + close. Nessun bottone calibration: l'effetto non ha un proprio trasporto.
+- **Card nuove** in `Molecule/ReactivityCard`: `Content=Effect` (badge SOURCE) e `Content=Link` (badge LINK), aggiunte al set esistente via `appendChild` (non `combineAsVariants`, che rinomina le varianti). Set ora 28.
+- **Badge auto-width:** le istanze dei badge dentro le card non crescevano col testo (`SOURCE` veniva tagliato). Ora ogni badge e' largo `ceil(testo) + 12`; 32 badge corretti.
+- **Toolbar (conferma utente):** `State=Collapsed, Theme=Light` passa da stroke `ring` a `border` e il tool da 42 a 46; entrambe le `Expanded` hanno padding 8/8 (figli a y 9/53/97/141/185) e altezza 238. Set 48x640, riordinato Collapsed/Expanded per tema.
+- **Row:** `Row/Organism/EffectPanel` in `Masters/Containers` (559 alto).
+
+### 0.17.2 - 2026-11-27 - Margine del knob strutturale
+
+- **`Molecule/ReactivityParamRow`**: il margine pomello→chip non dipende piu' dal gap dell'auto-layout. La riga ha `itemSpacing = 0`, un frame `Gap` 8px esplicito tra label e slider, e lo slider e' largo **204 (Panel) / 136 (Menu)**: la traccia e' 186/121, il pomello a fine corsa resta **dentro il frame** (4px / 1px di slack) e il chip parte dal bordo del frame. Risultato: `marginToChip` = 4 / 1 e `knobInsideFrame` = 4 / 1, con la riga che resta 320/240 e il chip a filo destro. Se qualcuno cambia il gap, il margine non si rompe.
+- **Costo dichiarato:** la traccia visibile passa da 196 a 186 (Panel) e da 128 a 121 (Menu). Il chip non si e' mosso.
+- **`Organism/Toolbar` (modifica dell'utente) verificata:** fills `popover` e stroke `border` in entrambe le varianti; Collapsed 48x48, Expanded 48x236, cinque tool da 44. Due punti da confermare, non toccati: (1) `State=Collapsed, Theme=Light` ha stroke `ring` (violet/600) invece di `border`; (2) Expanded ha 1px sopra e 15px sotto (figli a y 1/45/89/133/177), quindi il padding verticale non e' simmetrico.
+
+### 0.17.1 - 2026-11-27 - Pannello 100% composto: atomi, card, 40 varianti
+
+- **Nuovi atomi** (pagina 02, tutti token-bound): `Molecule/ReactivityParamRow` (20: `Width=Panel|Menu` x `Stop=0..4` x Theme; label + slider + chip, lo stop decide la posizione del pomello perche' `x` non e' sovrascrivibile in un'istanza), `Molecule/ReactivityBadge` (2), `Molecule/ReactivityTravel` (2), `Molecule/ReactivityCurve` (6: `Active=linear|exp|spring` x Theme), `Molecule/ReactivityPresetRow` (4: `State=Rest|Active` x Theme), `Organism/ReactivityHeader` (4: `State=Calm|Open` x Theme), `Molecule/ReactivityFooter` (2), `Molecule/ReactivityLiveRow` (2).
+- **`Molecule/ReactivityCard`** (24: `Content=Band|Bands|Response|Midi|Bpm|Snap|Range|Force|Curve|Stems|Harmony|Automation` x Theme): card 344 con head (titolo + badge istanza) e righe istanziate. E' la card che rende possibile la composizione: senza slot in questa API Figma, il contenuto vive in varianti di card, non in figli aggiunti all'istanza.
+- **`Organism/ReactivityPanel`** riscritto: **40 varianti** (`Theme=Dark|Light` x `Menu=Closed|Open` x `Preset` a 10 valori), 560 larghe, altezza 658-760 secondo la sezione del preset. Figli diretti: header ISTANCE, divider RECT, content FRAME, footer ISTANCE, menu ISTANCE. Dentro content: rail = 10 ISTANCE, sections = 4-5 ISTANCE di card. Zero testi o rettangoli liberi.
+- **Regole di piano per preset:** dB/Bass = core con badge banda (`dB`, `BASS`); Spectral = `Bands` al posto di `Band`; Stems = `Band` nascosta + card `Stems`; MIDI/BPM/Snap = card `Midi|Bpm|Snap` al posto di `Response`; Harmony e Pulse = card in piu' (`Harmony`, `Curve`); Automation = via `Band` e `Response`, resta `Automation`.
+- **Limite API:** non esistono slot (`figma.createSlot` assente, nessun `isSlot`): un'istanza non accetta figli. Da qui la scelta "card per contenuto".
+- **Set tidy:** i varianti sono disposti in griglia con 32px di gap; il set pannello misura 2384x7414.
+- **Dentro la board:** i set vivono in `Board/02 Components`, dentro i frame `Masters/*` come righe dipendenti, nello stesso schema delle altre (`List` verticale, gap 24, caption 11px + set): `Row/Molecule/ReactivityFoundations` in `Masters/Atoms` (Badge, Travel, Curve, LiveRow), `Row/Molecule/ReactivityControls` in `Masters/Controls` (ParamRow, PresetRow, Header, Footer), `Row/Molecule/ReactivityComposed` in `Masters/Containers` (Card, GlobalMenu, Panel). Board 2385x29737.
+
+### 0.17.0 - 2026-11-27 - Prima versione del pannello + menu globale
+
+- **C4 - `Organism/ReactivityPanel`** (4 varianti: `Theme=Dark|Light` x `Menu=Closed|Open`, 560x760): header con breadcrumb `Reactivity / <preset>` + bottone `Reactivity calibration` + close, rail a **10 preset** (riga attiva `accent` + barra 2px `selection`, testo `foreground` medium), corpo con le 4 card del core (`Band -> Response -> Range -> Force`) e la card del preset (`Pulse`, badge `ADD`), footer `enabled` + `reset`. Ombra y18 / blur 50.
+- **C4 - `Molecule/ReactivityGlobalMenu`** (2 varianti, 264x229): popover ancorato sotto `Reactivity calibration`. Titolo + badge `ON`, `Depth / Scatter / Speed / Glide`, nota, divider, riga live (`amount` / `radius`). E' il menu che nel dev si chiama *Global power*.
+- **Regola viola:** `accent` in `ds/semantic` e' `neutral/800` (#262626), identico a `muted`: la riga attiva usa `accent` + **barra viola 2px** come indicatore, testo `foreground`. Il viola resta indicatore (barra, fill slider, dot calibration, checkbox), mai testo. I badge di card sono pill con bordo e testo `muted-foreground`.
+- **Range card:** al posto del canvas c'e' una **travel bar** (traccia 320 + span `selection` fra i due valori + due handle 6px): legge "da dove a dove" senza ambiguita'.
+- **API:** `setBoundVariableForPaint` allega la variabile ma **non risolve** il colore base nei nodi creati via script: il fill resta sul grigio di fallback. Ricetta: leggere il valore risolto (catena di alias per `defaultModeId`) e usarlo come `color` del paint, poi legare la variabile. Applicato a 606 fill.
+- **LAB:** i 5 pannelli hand-drawn restano in `Section/Reactivity-Panel-LAB` come riferimento; i componenti stanno in `Organism/ReactivityPanel` a x7200.
+
 ### 0.16.0 — 2026-11-26 · Atomi del Reactivity panel + `Icon/info`
 - **C4 — `Molecule/MiniThumb`** passa a 4 varianti: `Kind = Scene | Noise` × Theme. La variante `Noise` è il reticolo 5×5 dei pesi (punti 2×2). Il clip `Chladni · Noise` in `View=Scenes noise` ora la usa via `swapComponent` sull'istanza annidata: il clip resta `Kind=Layer`, nessuna variante nuova in `Molecule/Clip`.
 - **C4 — `Icon/info`** nuovo set in `01 Foundations`, accanto a `Icon/alert-circle`: `Size = 16 | 20` × Theme, cerchio 1 + punto + barra, `foreground`.

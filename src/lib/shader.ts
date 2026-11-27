@@ -44,7 +44,9 @@ export const makeUniforms = (tex: THREE.DataTexture) => ({
   // frame
   framePadding: uniform(0.06), offset: uniform(new THREE.Vector2(0, 0)), zoom: uniform(1), aa: uniform(0.8),
   // selected-cell audio reactivity
-  selectedCell: uniform(new THREE.Vector2(-1, -1)), selectedOn: uniform(0), selectedScale: uniform(1), shapeOn: uniform(0), audioAmt: uniform(0), shapeAmt: uniform(0), bandAmt: uniform(0), roamSeed: uniform(0), roamSpeed: uniform(1), ringOn: uniform(0),
+  selectedCell: uniform(new THREE.Vector2(-1, -1)), selectedOn: uniform(0), selectedScale: uniform(1), shapeOn: uniform(0), audioAmt: uniform(0), shapeAmt: uniform(0), bandAmt: uniform(0), roamSeed: uniform(0), roamPhase: uniform(0), shapePhase: uniform(0), ringOn: uniform(0), radiusCells: uniform(1.5),
+  // scatter: how much the per-cell hash is allowed to break the smooth bell (0 = a clean radius)
+  scatter: uniform(0.4),
   // debug
   showField: uniform(0), showCells: uniform(0),
   // the cell grid
@@ -160,22 +162,33 @@ export const buildPicture = (U: Uniforms) => {
     // height, the sizes always sum to the grid extent (compensation built in), and the SDF gets
     // (index + u) from the cumulative, so the lines really move and junctions stay unique.
     const sSel = clamp(U.selectedScale, 0.25, 1.6)
-    const level = clamp(U.audioAmt, 0, 1)   // audio quantity: 0 silence, 1 peak (polarity fixed)
-    // effect radius (debug + driver): distance from the selected quadrant, widened by the level
+    const level = clamp(U.audioAmt, -1, 1)   // signed amount: positive shrinks, negative grows, 0 silence
+    // effect radius: computed on the CPU (radiusCells) so the global scatter cap is one number
     const dSel = vec2(cu.x.sub(floor(U.selectedCell.x).add(0.5)), cu.y.sub(floor(U.selectedCell.y).add(0.5)))
-    const radCells = float(0.9).add(level.mul(1.6)).add(U.bandAmt.mul(1.4))
+    const radCells = max(U.radiusCells, 0.25)
     const sigma = radCells.mul(0.5)
     const hit = U.selectedOn.mul(exp(dSel.x.mul(dSel.x).add(dSel.y.mul(dSel.y)).div(sigma.mul(sigma).mul(-2.0))))
     const cellAmt = (d: any): any => U.selectedOn.mul(level).mul(exp(d.mul(d).div(sigma.mul(sigma).mul(-2.0))))
-    // roaming: slow seeded drift, per quadrant, always scaled by the audio level
+    // roaming: slow seeded drift, per quadrant, always scaled by the audio level.
+    // The phase is integrated on the CPU (roamPhase) and not `time * speed`: multiplying an
+    // absolute time by a rate that changes makes the phase jump, and the grid snapped whenever
+    // the band moved or the audio paused.
     const hashk = (k: any): any => fract(sin(float(k).add(U.roamSeed).mul(12.9898)).mul(43758.5453))
-    const roam = (k: any): any => float(0.4).add(float(0.6).mul(sin(U.time.mul(0.8).mul(U.roamSpeed).add(hashk(k).mul(6.2831))).mul(0.5).add(0.5)))
-    const shapeAmtAt = (k: any): any => U.shapeAmt.mul(sin(float(k).mul(2.1).add(U.time.mul(0.55)).add(hashk(k).mul(2.0))).mul(0.5).add(0.5).mul(0.7).add(0.15)).mul(roam(k))
+    const roam = (k: any): any => float(0.4).add(float(0.6).mul(sin(U.roamPhase.add(hashk(k).mul(6.2831))).mul(0.5).add(0.5)))
+    const shapeAmtAt = (k: any): any => U.shapeAmt.mul(sin(float(k).mul(2.1).add(U.shapePhase).add(hashk(k).mul(2.0))).mul(0.5).add(0.5).mul(0.7).add(0.15)).mul(roam(k))
     const amtCol = (k: any): any => { const c0 = cellAmt(float(k).sub(floor(U.selectedCell.x))).mul(roam(k)); return c0.add(shapeAmtAt(k).mul(float(1).sub(c0))) }
     const amtRow = (k: any): any => { const c0 = cellAmt(float(k).sub(floor(U.selectedCell.y))).mul(roam(float(k).add(11.7))); return c0.add(shapeAmtAt(float(k).add(7.3)).mul(float(1).sub(c0))) }
-    const mapAxis = (x: any, n: any, amtAt: any): any => {
+    // Per-cell scatter: a seeded hash breaks the smooth bell, so the band reads as grains instead of
+    // a clean disc. It multiplies the amount, never adds to it: the rest value of the warp is 0, and
+    // 0 * anything is still 0, so silence stays flat whatever the scatter. Deterministic in roamSeed:
+    // the same seed draws the same pattern on every reload, and Seed re-rolls it.
+    const jit = (k: any, salt: any): any => {
+      const h = fract(sin(float(k).add(salt).add(U.roamSeed.mul(13.7)).mul(12.9898)).mul(43758.5453))
+      return float(1).add(U.scatter.mul(h.sub(0.5)))
+    }
+    const mapAxis = (x: any, n: any, amtAt: any, salt: any): any => {
       const A: any[] = []
-      for (let k = 0; k < 16; k++) A.push(amtAt(k))   // evaluate each cell once
+      for (let k = 0; k < 16; k++) A.push(amtAt(k).mul(jit(k, salt)))   // evaluate each cell once
       let sum: any = float(0), amin: any = float(1), amax: any = float(0)
       for (let k = 0; k < 16; k++) {
         const gk = step(float(k), n.sub(1))
@@ -198,9 +211,19 @@ export const buildPicture = (U: Uniforms) => {
       }
       return idx.add(clamp(u, 0, 0.999))
     }
-    const c = vec2(mapAxis(cu.x, U.cols, amtCol), mapAxis(cu.y, U.rows, amtRow))
+    const c = vec2(mapAxis(cu.x, U.cols, amtCol, 0.0), mapAxis(cu.y, U.rows, amtRow, 37.3))
     const ij = floor(c)
-    const f = c.sub(ij)
+    const f0 = c.sub(ij)
+    // Per-cell wobble of the intra-cell coordinate. The hash is per cell (two independent draws, one
+    // per axis) and the displacement is a sine of the local coordinate: zero on the cell border, max
+    // in the middle. So the borders stay put, the interior shifts, and nothing can cross into the
+    // neighbour cell (no tearing). Amplitude is gated by |amount| * scatter: at silence the grid is
+    // exactly as before, whatever the seed.
+    const cellHash = (salt: any): any => fract(sin(ij.x.mul(12.9898).add(ij.y.mul(78.233)).add(salt).add(U.roamSeed.mul(13.7))).mul(43758.5453))
+    const wobble = vec2(cellHash(0.0), cellHash(19.3)).sub(0.5).mul(2.0)
+    const wobAmp = U.scatter.mul(abs(level)).mul(0.12)
+    const f = f0.add(wobble.mul(sin(f0.mul(3.14159265))).mul(wobAmp))
+    const c2 = ij.add(f)
     const q = f.sub(0.5)
     const self = cellAt(ij)
     const Cf = step(0.5, self.r)
@@ -212,9 +235,16 @@ export const buildPicture = (U: Uniforms) => {
     const rectMask = float(1).sub(smoothstep(aaPx.negate(), aaPx, rectD))
     const emptyMask = float(1).sub(Cf).mul(rectMask)
 
-    const field = sdf(c)
+    const field = sdf(c2)
     const d = field.x, fillet = field.y
-    const inkMask = float(1).sub(smoothstep(aaC.negate(), aaC, d)).mul(rectMask)
+    // Print grain, per cell: the same seeded hash of the cell index moves the ink edge in or out and
+    // darkens or thins the ink. It is an ink property, not a geometry one, so it cannot tear or
+    // collapse a stroke; it reads as cells printed at different pressure. Gated by scatter * |amount|:
+    // at silence both are 0 and the cell prints exactly as before.
+    const cellTone = cellHash(41.7).sub(0.5)
+    const cellEdge = cellHash(63.1).sub(0.5)
+    const printGrain = U.scatter.mul(abs(level))
+    const inkMask = float(1).sub(smoothstep(aaC.negate(), aaC, d.sub(cellEdge.mul(0.2).mul(printGrain)))).mul(rectMask)
 
     // paper: soft mottling (two octaves of noise) plus fine grain; ink gets a faint speckle
     const pN = pPx.div(short).mul(U.grainScale).mul(6)
@@ -234,15 +264,16 @@ export const buildPicture = (U: Uniforms) => {
     // shadow (second SDF at an offset) or glow, under the ink; allowed to spill past the border
     const sizePx = U.effectSize.mul(U.px)
     const sizeC = sizePx.div(cellPx).max(0.001)
-    const d2 = sdf(c.sub(U.shadowOffset.mul(U.px).div(cellPx))).x
+    const d2 = sdf(c2.sub(U.shadowOffset.mul(U.px).div(cellPx))).x
     const sh = float(1).sub(smoothstep(0, sizeC, d2)).mul(U.shadowAmt)
     const gl = exp(max(d, 0).div(sizeC).negate()).mul(U.glowAmt)
     const spill = sizePx.add(length(U.shadowOffset).mul(U.px))
     const effectMask = float(1).sub(smoothstep(spill.sub(aaPx), spill.add(aaPx), rectD))
     col.assign(mix(col, U.effectColor, clamp(sh.add(gl), 0, 1).mul(effectMask)))
 
-    // ink
-    const inkCol = U.ink.mul(float(1).add(fine.mul(U.inkGrain).mul(0.6)))
+    // ink: density carries the same per-cell grain, so a cell is not just displaced but printed
+    // darker or thinner than its neighbour
+    const inkCol = U.ink.mul(float(1).add(fine.mul(U.inkGrain).mul(0.6)).add(cellTone.mul(0.6).mul(printGrain)))
     col.assign(mix(col, inkCol, inkMask))
 
     // circle ring: line colour in empty cells (but not in a fillet quadrant, where the ink edge takes its
