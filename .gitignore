@@ -1,4 +1,23 @@
-#folder
-disegno/*
-.omo/*
-node_modules/*
+# dependencies
+node_modules/
+
+# agent workspace, not part of the tool
+.omo/
+
+# design artifacts, not part of the tool
+disegno/
+
+# dist/ is tracked on purpose: it is the runnable build.
+# Uncomment to stop shipping builds in the repo.
+# dist/
+
+# local env and OS/editor noise
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+*.log
+.vite/
+coverage/
+*.tsbuildinfo
